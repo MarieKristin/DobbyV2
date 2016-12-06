@@ -99,6 +99,130 @@ unsigned int blinken(int lampe, int geschwindigkeit){
 
 
 
+/* ***************************************** */
+/* ***************************************** */
+/* Motor-Funktionen 			     */
+/* ***************************************** */
+/* ***************************************** */
+
+void initializeSend(){
+handle = serOpen("/dev/ttyAMA0", BAUDRATE, 0);
+
+if (0 > handle) {
+        printf("[ERROR] UART open()\n");
+}
+else{
+	printf("[OK] UART open\n");
+}
+}
+
+void sendWakeUp(){
+	//printf("Sende WakeUP");
+	handle = serClose(handle);
+	gpioSetMode(14, PI_OUTPUT);
+	gpioWrite(14, 0);
+	gpioSleep(PI_TIME_RELATIVE, 0, 70);  //Warte 1ms
+	gpioWrite(14, 1);
+	gpioSetMode(14, PI_ALT0);
+	handle = serOpen("/dev/ttyAMA0", BAUDRATE, 0);
+	gpioSleep(PI_TIME_RELATIVE, 0, 150000);
+}
+
+
+void sendSyncByte(){
+	serWriteByte(handle, 0x55);
+}
+
+void sendBreak(){
+	handle = serClose(handle);
+	printf("[OK] UART Closed\n");
+	gpioSetMode(14, PI_OUTPUT);
+	gpioWrite(14, 0);
+	printf("[OK] Set Output Low, wait 100ms\n");
+	gpioSleep(PI_TIME_RELATIVE, 0, 680);  //Warte 680µs
+	gpioWrite(14, 1);
+	gpioSleep(PI_TIME_RELATIVE, 0, 20);  //Warte 680µs
+	printf("[OK] Set Output High\n");
+	gpioSetMode(14, PI_ALT0);
+	handle = serOpen("/dev/ttyAMA0", BAUDRATE, 0);
+}
+
+void sendInitFrame(){
+	sendBreak();
+	sendSyncByte();
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+}
+
+void sendActivationFrame(){
+	sendBreak();
+	sendSyncByte();
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+}
+
+void sendMessageFrame(){
+	sendBreak();
+	sendSyncByte();
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX); 
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX); 
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX); 
+
+}
+void sendMessageFrame1(){
+	sendBreak();
+	sendSyncByte();
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+
+}
+//Motor-Stopfunktion
+void sendMessageFrame2(){
+	sendBreak();
+	sendSyncByte();
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX); 
+	serWriteByte(handle, 0xXX); 
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX); 
+	serWriteByte(handle, 0xXX); 
+	serWriteByte(handle, 0xXX);
+	serWriteByte(handle, 0xXX); 
+
+}
 
 
 /* ***************************************** */
@@ -450,7 +574,44 @@ unsigned int prepare_reply (struct libwebsocket *wsi, unsigned char *data, unsig
 			delay(2000);
 			gpioWrite(23, 0);
 			}
+	const char MotorOn[] = "MotorOn";
+	test = strcmp(data, MotorOn);
+	if(test == 0){ 		gpioWrite(23, 1);
+				gpioWrite(25, 1);
 
+				sendWakeUp();
+				gpioSleep(PI_TIME_RELATIVE, 0, 310000);  //Warte 1ms
+				sendInitFrame();
+				gpioSleep(PI_TIME_RELATIVE, 0, 50000);  //Warte 1ms
+				sendActivationFrame();
+				gpioSleep(PI_TIME_RELATIVE, 0, 50000);  //Warte 1ms
+				sendMessageFrame();
+				gpioSleep(PI_TIME_RELATIVE, 0, 50000);  //Warte 1ms
+				delay(2000);
+
+
+				gpioWrite(25, 0);
+				gpioWrite(23, 0);
+			}
+	const char MotorOff[] = "MotorOff";
+	test = strcmp(data, MotorOff);
+	if(test == 0){		gpioWrite(23, 1);
+				gpioWrite(25, 1);
+
+
+				sendWakeUp();
+				gpioSleep(PI_TIME_RELATIVE, 0, 310000);
+				sendInitFrame();
+				gpioSleep(PI_TIME_RELATIVE, 0, 50000);
+				sendActivationFrame();
+				gpioSleep(PI_TIME_RELATIVE, 0, 50000);
+				sendMessageFrame2();
+				gpioSleep(PI_TIME_RELATIVE, 0, 50000);
+				delay(2000);
+
+				gpioWrite(25, 0);
+				gpioWrite(23, 0);
+			}
 
 		// Test Ende
   reply_obj = json_pack ("{s:s, s:s}", "Type", "standard", "Message", reply);				 // Erstellung JSON-Objekt -> "Type standart", "Message REPLY"
