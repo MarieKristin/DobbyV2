@@ -69,10 +69,20 @@ GOptionContext *option_context = NULL;
 gint exit_value = EXIT_SUCCESS;
 
 //Motor
+enum {
+	message = 1,
+	activation = 2
+};
+
 struct linFrame {
 	// TODO Erweiterungen, evtl Name etc.
+	int id;
 	int frameContent[10];
-} messageFrame;
+} messageFrame, activationFrame;
+
+messageFrame.id = message;
+activationFrame.id = activation;
+
 static int BAUDRATE = 19200;
 int handle = -1;
 struct termios options;
@@ -162,16 +172,9 @@ void sendInitFrame() {
 void sendActivationFrame() {
 	sendBreak();
 	sendSyncByte();
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
+	for (int i = 0; i < sizeof(activationFrame.frameContent); i++) {
+		serWriteByte(handle, activationFrame.frameContent[i]);
+	}
 }
 
 void sendMessageFrame() {
@@ -180,6 +183,11 @@ void sendMessageFrame() {
 	for (int i = 0; i < sizeof(messageFrame.frameContent); i++) {
 		serWriteByte(handle, messageFrame.frameContent[i]);
 	}
+}
+
+void stopMotors(){
+//	TODO set messageFrame inputs
+	sendmessageFrame();
 }
 
 void sendMessageFrame1() {
@@ -217,10 +225,30 @@ int getChecksum() {
 	// TODO Implement
 	return 0;
 }
+/*
+ * Function:  setFrame
+ * --------------------
+ * sets the Frame data inputs to the given Frame. also sets the checksum of the frame.
+ *
+ *	TODO data descriptions
+ *  id: ID of the frame, messageFrame=1, acivationFrame=2
+ *  data0:
+ *  data1:
+ *  data2:
+ *  data3:
+ *  data4:
+ *  data5:
+ *  data6:
+ *  data7:
+ *
+ *
+ *  returns: an integer that is 1 for positive result and 0 for an error
+ */
 
-int setFrameContent(int id, int data1, int data2, int data3, int data4,
+int setFrame(int id, int data0, int data1, int data2, int data3, int data4,
 		int data5, int data6, int data7, int data8) {
-	messageFrame.frameContent[0] = id;
+	if (id == message){
+	messageFrame.frameContent[0] = data0;
 	messageFrame.frameContent[1] = data1;
 	messageFrame.frameContent[2] = data2;
 	messageFrame.frameContent[3] = data3;
@@ -230,6 +258,24 @@ int setFrameContent(int id, int data1, int data2, int data3, int data4,
 	messageFrame.frameContent[7] = data7;
 	messageFrame.frameContent[8] = data8;
 	messageFrame.frameContent[9] = getChecksum();
+	return 1;
+	}
+
+	if (id == activation){
+	activationFrame.frameContent[0] = data0;
+	activationFrame.frameContent[1] = data1;
+	activationFrame.frameContent[2] = data2;
+	activationFrame.frameContent[3] = data3;
+	activationFrame.frameContent[4] = data4;
+	activationFrame.frameContent[5] = data5;
+	activationFrame.frameContent[6] = data6;
+	activationFrame.frameContent[7] = data7;
+	activationFrame.frameContent[8] = data8;
+	activationFrame.frameContent[9] = getChecksum();
+	return 1;
+	}
+	printf("Falsche oder unbekannte FrameID (%d)", id);
+	return = 0;
 }
 
 /* ***************************************** */
