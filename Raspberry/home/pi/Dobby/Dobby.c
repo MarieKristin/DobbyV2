@@ -221,9 +221,18 @@ void sendMessageFrame2() {
 	serWriteByte(handle, 0xXX);
 }
 
-int getChecksum() {
-	// TODO Implement
-	return 0;
+int getChecksum(int frame) {
+	int* p_frame = frame;	//geht das so?
+	int summe=0;
+
+	for(int i=0; i<0; i++){
+		summe += &p_frame[i];
+		if (summe > 255){
+			summe -= 255;
+		}
+	}
+
+	return ~summe;
 }
 /*
  * Function:  setFrame
@@ -257,7 +266,7 @@ int setFrame(int id, int data0, int data1, int data2, int data3, int data4,
 	messageFrame.frameContent[6] = data6;
 	messageFrame.frameContent[7] = data7;
 	messageFrame.frameContent[8] = data8;
-	messageFrame.frameContent[9] = getChecksum();
+	messageFrame.frameContent[9] = getChecksum(messageFrame);
 	return 1;
 	}
 
@@ -271,7 +280,7 @@ int setFrame(int id, int data0, int data1, int data2, int data3, int data4,
 	activationFrame.frameContent[6] = data6;
 	activationFrame.frameContent[7] = data7;
 	activationFrame.frameContent[8] = data8;
-	activationFrame.frameContent[9] = getChecksum();
+	activationFrame.frameContent[9] = getChecksum(activationFrame);
 	return 1;
 	}
 	printf("Falsche oder unbekannte FrameID (%d)", id);
