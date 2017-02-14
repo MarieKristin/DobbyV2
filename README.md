@@ -20,4 +20,5 @@ Einen besonderen Dank gilt an dieser Stelle unseren unterstützenden Unternehmen
 
 </table>
 
-
+## Weitere Informationen...
+Weitere Informationen zu diesem Projekt können unserem Blog entnommmen werden, der unter <a href="www.h120.de">www.h120.de</a> zu erreichen ist.
