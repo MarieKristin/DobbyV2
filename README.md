@@ -8,9 +8,10 @@ Entwickler sind in diesem Projekt Nicolas Huentz, Marie-Kristin Kaiser und Danie
 
 ## Partner-Firmen
 Einen besonderen Dank gilt an dieser Stelle unseren unterstützenden Unternehmen:
+
 <p align="center">
-  <a href="https://www.sick.com/de/de/"><img src="https://www.sick.com/static_2017021411/_ui/desktop/common/images/base/pics/logo.png" width="350"/></a>
-  <img src="your_relative_path_here_number_2_large_name" width="350"/>
+  <a href="https://www.sick.com/de/de/"><img src="https://github.com/MarieKristin/DobbyV2/blob/master/Dokumentation/Firmen/sick.png" width="150"/></a>
+   <a href="http://hasler-holztreppen.de/"><img src="https://github.com/MarieKristin/DobbyV2/blob/master/Dokumentation/Firmen/hasler.png" width="150"/></a>
 </p>
 
 
