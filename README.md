@@ -9,10 +9,17 @@ Entwickler sind in diesem Projekt Nicolas Huentz, Marie-Kristin Kaiser und Danie
 ## Partner-Firmen
 Einen besonderen Dank gilt an dieser Stelle unseren unterstützenden Unternehmen:
 
-<p align="center">
-  <a href="https://www.sick.com/de/de/"><img src="https://github.com/MarieKristin/DobbyV2/blob/master/Dokumentation/Firmen/sick.png" width="150"/></a>
-   <a href="http://hasler-holztreppen.de/"><img src="https://github.com/MarieKristin/DobbyV2/blob/master/Dokumentation/Firmen/hasler.png" width="150"/></a>
-</p>
-
+<table>
+<tr><td>
+  <a href="https://www.sick.com/de/de/"><img src="https://github.com/MarieKristin/DobbyV2/blob/master/Dokumentation/Firmen/sick.png" width="200"/></a></td><td></td><td>
+   <a href="http://hasler-holztreppen.de/"><img src="https://github.com/MarieKristin/DobbyV2/blob/master/Dokumentation/Firmen/hasler.png" width="200"/></a></td></tr>
+<tr><td>
+  <a href="http://www.il-online.de/"><img src="https://github.com/MarieKristin/DobbyV2/blob/master/Dokumentation/Firmen/ile.png" width="200"/></a></td><td></td><td>
+   <a href="https://www.siemens.com/de/de/home.html"><img src="https://github.com/MarieKristin/DobbyV2/blob/master/Dokumentation/Firmen/siemens.jpg" width="200"/></a></td></tr>
+<tr><td>
+  <a href="http://www.valeo.de/"><img src="https://github.com/MarieKristin/DobbyV2/blob/master/Dokumentation/Firmen/valeo.png" width="200"/></a></td><td></td><td>
+   <a href="http://www.thinktecture.com/">http://www.thinktecture.com/</a></td></tr>   
+   
+</table>
 
 
