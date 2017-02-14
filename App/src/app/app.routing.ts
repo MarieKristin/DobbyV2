@@ -1,6 +1,7 @@
 import {Routes, RouterModule} from '@angular/router';
 import {HomeComponent} from './home/home.component';
-import {WebsocketComponent} from './websocket/websocket.component';
+import {ConsoleComponent} from './console/console.component';
+import {ConnectComponent} from './connect/connect.component';
 import {GraphicsComponent} from './graphics/graphics.component';
 
 const routes: Routes = [
@@ -14,8 +15,12 @@ const routes: Routes = [
     component: HomeComponent
   },
   {
-    path: 'websocket',
-    component: WebsocketComponent
+    path: 'console',
+    component: ConsoleComponent
+  },
+  {
+    path: 'connect',
+    component: ConnectComponent
   },
   {
     path: 'graphics',

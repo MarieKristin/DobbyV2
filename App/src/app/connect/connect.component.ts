@@ -2,10 +2,10 @@ import { Component, OnInit } from '@angular/core';
 
 @Component({
   selector: 'app-websocket',
-  templateUrl: './websocket.component.html',
-  styleUrls: ['./websocket.component.css']
+  templateUrl: './connect.component.html',
+  styleUrls: ['./connect.component.css']
 })
-export class WebsocketComponent {
+export class ConnectComponent {
 
   private _ws: WebSocket;
 

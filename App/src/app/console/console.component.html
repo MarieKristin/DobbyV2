@@ -1,0 +1,15 @@
+<h2>Todo</h2>
+<ol>
+  <li>Verbindung zum Raspi aufbauen</li>
+  <li>Kommando senden</li>
+  <li>Kommando empfangen?</li>
+</ol>
+
+<button type="button" id="btn-primary" class="btn btn-primary" (click)="connect()">Connect</button>
+
+<input type="text" class="hidden" placeholder="Kommando" [(ngModel)]="command">
+<button type="button" class="btn hidden" (click)="send()">Senden</button>
+
+<ul>
+  <li *ngFor="let h of history">{{ h }}</li>
+</ul>

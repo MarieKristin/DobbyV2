@@ -6,13 +6,15 @@ import { FormsModule } from '@angular/forms';
 import { HttpModule } from '@angular/http';
 
 import { AppComponent } from './app.component';
-import { WebsocketComponent } from './websocket/websocket.component';
+import { ConsoleComponent } from './console/console.component';
+import { ConnectComponent } from './connect/connect.component';
 import {appRoutes} from './app.routing';
 
 @NgModule({
   declarations: [
     AppComponent,
-    WebsocketComponent,
+    ConsoleComponent,
+    ConnectComponent,
     HomeComponent, GraphicsComponent
   ],
   imports: [
