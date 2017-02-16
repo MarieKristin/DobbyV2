@@ -6,6 +6,20 @@
 <button type="button" class="btn btn-choose hidden" (click)="auto()">Automatik</button>
 <button type="button" class="btn btn-choose hidden" (click)="man()">Manuell</button>
 
+<img src="../../assets/ajax-loader.gif" class="loader" alt="Loading..." style="visibility:hidden">
+
 <ul>
   <li *ngFor="let h of history">{{ h }}</li>
 </ul>
+
+<!--<p class="hidden">
+  X: <p id="textView1"></p>
+  Y: <p id="textView2"></p>
+  Angle: <p id="textView3"></p>
+  Distance: <p id="textView4"></p>
+  Direction: <p id="textView5"></p>
+</p>-->
+
+<!--<img class="img_joystick hidden" width="350dp" height="350dp" src="../../assets/image_button_bg.png" />-->
+
+<button type="button" class="btn hidden" (click)="back()">Zur&uuml;ck</button>
