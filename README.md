@@ -16,7 +16,7 @@ Einen besonderen Dank gilt an dieser Stelle unseren unterstützenden Unternehmen
 <tr><td>
   <a href="http://www.il-online.de/"><img src="https://github.com/MarieKristin/DobbyV2/blob/master/Dokumentation/Firmen/ile.png" width="200"/></a></td><td></td><td>
    <a href="https://www.siemens.com/de/de/home.html"><img src="https://github.com/MarieKristin/DobbyV2/blob/master/Dokumentation/Firmen/siemens.jpg" width="200"/></a></td><td></td><td>
-   <a href="http://www.thinktecture.com/">http://www.thinktecture.com/</a></td></tr>
+   <a href="http://www.thinktecture.com/"><img src="https://github.com/MarieKristin/DobbyV2/blob/master/Dokumentation/Firmen/think_tecture.png" width="200"/></a></td></tr>
 
 </table>
 
