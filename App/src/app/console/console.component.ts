@@ -15,8 +15,6 @@ export class ConsoleComponent {
 
   private helpArr: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('hidden');
   private helpEl: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('btn-primary');
-  //this.helpArr[0].style.display = "none";
-  //this.helpArr[1].style.display = "none";
 
   // TODO: In einen Angular 2 Service schieben
   constructor() {  }
@@ -30,8 +28,6 @@ export class ConsoleComponent {
     this.helpArr[0].style.display = "block";
     this.helpArr[1].style.display = "block";
     this.helpEl[0].style.display = "none";
-    //getElementsByClass(hidden).removeClass(hidden);
-    //this.addClass(hidden);
   }
 
   public send() {
