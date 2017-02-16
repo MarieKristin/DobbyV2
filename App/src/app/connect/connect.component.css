@@ -6,3 +6,7 @@ p {
   float: left;
   margin: 5%;
 }
+
+.error {
+  display: none;
+}

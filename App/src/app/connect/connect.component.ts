@@ -29,7 +29,13 @@ export class ConnectComponent {
     this._ws = new WebSocket('ws://192.168.0.1:8080');
     //this._ws = new WebSocket('ws://192.168.178.50:8080');
 
+    var timeOut = setTimeout( function () {
+      this.loader[0].style.visibility = "hidden";
+      (<HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('error'))[0].style.display = "block";
+    }, 3000);
+
     this._ws.onopen = event => {
+      clearTimeout(timeOut);
       this.loader[0].style.visibility = "hidden";
 
       this._ws.onmessage = event => {
