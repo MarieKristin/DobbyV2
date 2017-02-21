@@ -3,3 +3,4 @@
 
 declare var System: any;
 declare var THREE: any;
+declare var VirtualJoystick: any;

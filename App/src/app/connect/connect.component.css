@@ -10,3 +10,7 @@ p {
 .error {
   display: none;
 }
+
+.manual {
+  display: none;
+}

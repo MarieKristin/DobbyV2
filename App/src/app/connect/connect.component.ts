@@ -1,10 +1,12 @@
 import { Component, OnInit } from '@angular/core';
+import '../../assets/virtualjoystick.js';
 
 @Component({
   selector: 'app-websocket',
   templateUrl: './connect.component.html',
   styleUrls: ['./connect.component.css']
 })
+
 export class ConnectComponent {
 
   private _ws: WebSocket;
@@ -13,9 +15,12 @@ export class ConnectComponent {
 
   public history: Array<string> = [];
 
-  private helpArr: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('hidden');
+  private arrChoose: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('hidden');
+  private arrMan: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('manual');
   private helpEl: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('btn-prim');
   private loader: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('loader');
+
+  private joystick;
 
   // TODO: In einen Angular 2 Service schieben
   constructor() {  }
@@ -42,8 +47,8 @@ export class ConnectComponent {
         this.history.push('[SERVER] ' + event.data);
       };
 
-      for (i=0; i< 3; i++) {
-        this.helpArr[i].style.display = "block";
+      for (i=0; i< this.arrChoose.length; i++) {
+        this.arrChoose[i].style.display = "block";
       }
     }
   }
@@ -64,6 +69,16 @@ export class ConnectComponent {
 
   public man() {
     var i = 0;
+    this.joystick = new VirtualJoystick({
+      mouseSupport: true,
+      stationaryBase: true,
+      baseX: 200,
+      baseY: 200,
+      limitStickTravel: true,
+      stickRadius: 50
+    });
+
+
     //if (!this.command) {
     //  return;
     //}
@@ -75,22 +90,25 @@ export class ConnectComponent {
     this.history.push('[CLIENT] ' + 'manual');
 
     //this.command = '';
-    for (i=0; i< 3; i++) {
-      this.helpArr[i].style.display = "none";
+    for (i=0; i< this.arrChoose.length; i++) {
+      this.arrChoose[i].style.display = "none";
     }
-    for (i=3; i< this.helpArr.length; i++) {
-      this.helpArr[i].style.display = "block";
+    for (i=0; i< this.arrMan.length; i++) {
+      this.arrMan[i].style.display = "block";
     }
   }
 
   public back() {
     var i = 0;
 
-    for (i=3; i< this.helpArr.length; i++) {
-      this.helpArr[i].style.display = "none";
+    this.joystick.destroy();
+    this._ws.send('abbrManuell');
+    this.history.push('[CLIENT] ' + 'abbrManuell');
+    for (i=0; i< this.arrMan.length; i++) {
+      this.arrMan[i].style.display = "none";
     }
-    for (i=0; i< 3; i++) {
-      this.helpArr[i].style.display = "block";
+    for (i=0; i< this.arrChoose.length; i++) {
+      this.arrChoose[i].style.display = "block";
     }
   }
 }
