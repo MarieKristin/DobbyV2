@@ -19,7 +19,8 @@ pkg_check_modules(GIO2 REQUIRED gio-2.0)
 
 add_definitions(${OpenSSL_CFLAGS} ${WEBSOCK_CFLAGS} ${JSON_CFLAGS} ${GLIB2_CFLAGS} ${GIO2_CFLAGS})
 
-set(SRCS Dobby.c)
+set(SRCS Dobby.c lin.c)
+include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${WIRINGPI_INCLUDE_DIRS})
 include_directories(${pigpio_INCLUDE_DIRS})
 add_executable(${PROJECT_NAME} ${SRCS})
