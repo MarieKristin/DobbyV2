@@ -16,9 +16,7 @@ int BAUDRATE = 19200;
 int handle = -1;
 
 enum {
-	message = 1,
-	activation = 2,
-	init = 3
+	message = 1, activation = 2, init = 3
 };
 
 /**
@@ -27,7 +25,7 @@ enum {
 typedef struct {
 	int id;
 	int frameContent[10];
-}linFrame;
+} linFrame;
 
 linFrame initFrame;
 linFrame messageFrame;
@@ -62,46 +60,47 @@ void initializeSend() {
  */
 int setFrame(int id, int data0, int data1, int data2, int data3, int data4,
 		int data5, int data6, int data7, int data8) {
-	if (id == message){
-	messageFrame.frameContent[0] = data0;
-	messageFrame.frameContent[1] = data1;
-	messageFrame.frameContent[2] = data2;
-	messageFrame.frameContent[3] = data3;
-	messageFrame.frameContent[4] = data4;
-	messageFrame.frameContent[5] = data5;
-	messageFrame.frameContent[6] = data6;
-	messageFrame.frameContent[7] = data7;
-	messageFrame.frameContent[8] = data8;
-	messageFrame.frameContent[9] = getChecksum(messageFrame.frameContent);
-	return 1;
+	if (id == message) {
+		messageFrame.frameContent[0] = data0;
+		messageFrame.frameContent[1] = data1;
+		messageFrame.frameContent[2] = data2;
+		messageFrame.frameContent[3] = data3;
+		messageFrame.frameContent[4] = data4;
+		messageFrame.frameContent[5] = data5;
+		messageFrame.frameContent[6] = data6;
+		messageFrame.frameContent[7] = data7;
+		messageFrame.frameContent[8] = data8;
+		messageFrame.frameContent[9] = getChecksum(messageFrame.frameContent);
+		return 1;
 	}
 
-	if (id == init){
-	initFrame.frameContent[0] = data0;
-	initFrame.frameContent[1] = data1;
-	initFrame.frameContent[2] = data2;
-	initFrame.frameContent[3] = data3;
-	initFrame.frameContent[4] = data4;
-	initFrame.frameContent[5] = data5;
-	initFrame.frameContent[6] = data6;
-	initFrame.frameContent[7] = data7;
-	initFrame.frameContent[8] = data8;
-	initFrame.frameContent[9] = getChecksum(initFrame.frameContent);
-	return 1;
+	if (id == init) {
+		initFrame.frameContent[0] = data0;
+		initFrame.frameContent[1] = data1;
+		initFrame.frameContent[2] = data2;
+		initFrame.frameContent[3] = data3;
+		initFrame.frameContent[4] = data4;
+		initFrame.frameContent[5] = data5;
+		initFrame.frameContent[6] = data6;
+		initFrame.frameContent[7] = data7;
+		initFrame.frameContent[8] = data8;
+		initFrame.frameContent[9] = getChecksum(initFrame.frameContent);
+		return 1;
 	}
 
-	if (id == activation){
-	activationFrame.frameContent[0] = data0;
-	activationFrame.frameContent[1] = data1;
-	activationFrame.frameContent[2] = data2;
-	activationFrame.frameContent[3] = data3;
-	activationFrame.frameContent[4] = data4;
-	activationFrame.frameContent[5] = data5;
-	activationFrame.frameContent[6] = data6;
-	activationFrame.frameContent[7] = data7;
-	activationFrame.frameContent[8] = data8;
-	activationFrame.frameContent[9] = getChecksum(activationFrame.frameContent);
-	return 1;
+	if (id == activation) {
+		activationFrame.frameContent[0] = data0;
+		activationFrame.frameContent[1] = data1;
+		activationFrame.frameContent[2] = data2;
+		activationFrame.frameContent[3] = data3;
+		activationFrame.frameContent[4] = data4;
+		activationFrame.frameContent[5] = data5;
+		activationFrame.frameContent[6] = data6;
+		activationFrame.frameContent[7] = data7;
+		activationFrame.frameContent[8] = data8;
+		activationFrame.frameContent[9] = getChecksum(
+				activationFrame.frameContent);
+		return 1;
 	}
 	printf("Falsche oder unbekannte FrameID (%d)", id);
 	return 0;
@@ -112,16 +111,16 @@ int setFrame(int id, int data0, int data1, int data2, int data3, int data4,
  * @return
  */
 int getChecksum(int frame[]) {
-	int summe=0;
+	int summe = 0;
 	int i;
 
-	for(i = 0; i < 0; i++){
-		summe += frame[i];		// nico hat das so für gut befunden und abgenommen
-		if (summe > 255){
+	for (i = 1; i < 9; i++) {
+		summe += frame[i];
+		if (summe > 255) {
 			summe -= 255;
 		}
 	}
-	return ~summe;
+	return ~summe & 0xFF;
 }
 
 /**
@@ -201,16 +200,23 @@ void sendSyncByte() {
 /**
  *
  */
-void setInitialContents(){
+void setInitialContents() {
 	messageFrame.id = message;
 	activationFrame.id = activation;
 	initFrame.id = init;
-	setFrame(init, 0x3C, 0xA0, 0x02, 0x10, 0x84, 0xFF, 0xFF, 0xFF, 0xFF);	//Checksum 0xC8
+	setFrame(init, 0x3C, 0xA0, 0x02, 0x10, 0x84, 0xFF, 0xFF, 0xFF, 0xFF);//Checksum 0xC8
 	setFrame(activation, 0x3C, 0xAA, 0x9F, 0x0E, 0x0D, 0x01, 0xFF, 0xFF, 0xFF); //Checksum 0x99
 }
 
-void startMotors(int directionLeft, int velocityLeft, int directionRight, int velocityRight){
-	setFrame(message, 0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5, directionRight, velocityRight, 0xFF);
+void startMotors(int directionLeft, int velocityLeft, int directionRight,
+		int velocityRight) {
+
+	setInitialContents();
+	if (handle < 0) {
+		initializeSend();
+	}
+	setFrame(message, 0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5,
+			directionRight, velocityRight, 0xFF);
 	sendWakeUp();
 	gpioSleep(PI_TIME_RELATIVE, 0, 310000);  //Warte 1ms
 	sendInitFrame();
@@ -225,7 +231,7 @@ void startMotors(int directionLeft, int velocityLeft, int directionRight, int ve
 /**
  *
  */
-void stopMotors(){
+void stopMotors() {
 	setFrame(message, 0x3C, 0x84, 0xAA, 0x00, 0x55, 0xA5, 0xAA, 0x00, 0xFF); //Checksum 2B
 	sendWakeUp();
 	gpioSleep(PI_TIME_RELATIVE, 0, 310000);
