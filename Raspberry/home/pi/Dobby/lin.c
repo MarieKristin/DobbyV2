@@ -15,6 +15,9 @@
 int BAUDRATE = 19200;
 int handle = -1;
 
+/**
+ *
+ */
 enum {
 	message = 1, activation = 2, init = 3
 };
@@ -204,13 +207,23 @@ void setInitialContents() {
 	messageFrame.id = message;
 	activationFrame.id = activation;
 	initFrame.id = init;
-	setFrame(init, 0x3C, 0xA0, 0x02, 0x10, 0x84, 0xFF, 0xFF, 0xFF, 0xFF);//Checksum 0xC8
+	setFrame(init, 0x3C, 0xA0, 0x02, 0x10, 0x84, 0xFF, 0xFF, 0xFF, 0xFF); //Checksum 0xC8
 	setFrame(activation, 0x3C, 0xAA, 0x9F, 0x0E, 0x0D, 0x01, 0xFF, 0xFF, 0xFF); //Checksum 0x99
 }
 
+int linInitialise(){
+	return gpioInitialise();
+}
+
+/**
+ *
+ * @param directionLeft
+ * @param velocityLeft	value between 0 and 100 (0x64). The velocity of the left engine
+ * @param directionRight
+ * @param velocityRight value between 0 and 100 (0x64). The velocity of the right engine
+ */
 void startMotors(int directionLeft, int velocityLeft, int directionRight,
 		int velocityRight) {
-
 	setInitialContents();
 	if (handle < 0) {
 		initializeSend();
@@ -218,13 +231,13 @@ void startMotors(int directionLeft, int velocityLeft, int directionRight,
 	setFrame(message, 0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5,
 			directionRight, velocityRight, 0xFF);
 	sendWakeUp();
-	gpioSleep(PI_TIME_RELATIVE, 0, 310000);  //Warte 1ms
+	gpioSleep(PI_TIME_RELATIVE, 0, 310000);  //Warte 310ms
 	sendInitFrame();
-	gpioSleep(PI_TIME_RELATIVE, 0, 50000);  //Warte 1ms
+	gpioSleep(PI_TIME_RELATIVE, 0, 50000);  //Warte 50ms
 	sendActivationFrame();
-	gpioSleep(PI_TIME_RELATIVE, 0, 50000);  //Warte 1ms
+	gpioSleep(PI_TIME_RELATIVE, 0, 50000);  //Warte 50ms
 	sendMessageFrame();
-	gpioSleep(PI_TIME_RELATIVE, 0, 50000);  //Warte 1ms
+	gpioSleep(PI_TIME_RELATIVE, 0, 50000);  //Warte 50ms
 	delay(2000);
 }
 
@@ -232,6 +245,9 @@ void startMotors(int directionLeft, int velocityLeft, int directionRight,
  *
  */
 void stopMotors() {
+	if (handle < 0) {
+		initializeSend();
+	}
 	setFrame(message, 0x3C, 0x84, 0xAA, 0x00, 0x55, 0xA5, 0xAA, 0x00, 0xFF); //Checksum 2B
 	sendWakeUp();
 	gpioSleep(PI_TIME_RELATIVE, 0, 310000);

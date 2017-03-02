@@ -673,7 +673,7 @@ int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argum
 	/*************************/
 
 	// Bibliothek um GPIOs anzusprechen
-	if (gpioInitialise() < 0) {
+	if (linInitialise() < 0) {
 		printf("Initialisierung fehlgeschlagen!\n");
 	}
 	gpioSetMode(27, PI_OUTPUT); 		// Lampe weiss
