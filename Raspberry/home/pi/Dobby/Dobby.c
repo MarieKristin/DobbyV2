@@ -41,6 +41,7 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <pigpio.h>
+#include <lin.h>
 
 // #define _GNU_SOURCE
 #define MAX_PAYLOAD 10000		 // Max Datasize der Socket-Verbindungen pro Task
@@ -68,23 +69,6 @@ int signal_id = 0;
 GOptionContext *option_context = NULL;
 gint exit_value = EXIT_SUCCESS;
 
-//Motor
-enum {
-	message = 1,
-	activation = 2
-};
-
-struct linFrame {
-	// TODO Erweiterungen, evtl Name etc.
-	int id;
-	int frameContent[10];
-} messageFrame, activationFrame;
-
-messageFrame.id = message;
-activationFrame.id = activation;
-
-static int BAUDRATE = 19200;
-int handle = -1;
 struct termios options;
 
 /* ***************************************** */
@@ -106,183 +90,6 @@ unsigned int blinken(int lampe, int geschwindigkeit) {
 		i++;
 	}
 	return 1;
-}
-
-/* ***************************************** */
-/* ***************************************** */
-/* Motor-Funktionen 			     */
-/* ***************************************** */
-/* ***************************************** */
-
-void initializeSend() {
-	handle = serOpen("/dev/ttyAMA0", BAUDRATE, 0);
-
-	if (0 > handle) {
-		printf("[ERROR] UART open()\n");
-	} else {
-		printf("[OK] UART open\n");
-	}
-}
-
-void sendWakeUp() {
-	//printf("Sende WakeUP");
-	handle = serClose(handle);
-	gpioSetMode(14, PI_OUTPUT);
-	gpioWrite(14, 0);
-	gpioSleep(PI_TIME_RELATIVE, 0, 70);  //Warte 1ms
-	gpioWrite(14, 1);
-	gpioSetMode(14, PI_ALT0);
-	handle = serOpen("/dev/ttyAMA0", BAUDRATE, 0);
-	gpioSleep(PI_TIME_RELATIVE, 0, 150000);
-}
-
-void sendSyncByte() {
-	serWriteByte(handle, 0x55);
-}
-
-void sendBreak() {
-	handle = serClose(handle);
-	printf("[OK] UART Closed\n");
-	gpioSetMode(14, PI_OUTPUT);
-	gpioWrite(14, 0);
-	printf("[OK] Set Output Low, wait 100ms\n");
-	gpioSleep(PI_TIME_RELATIVE, 0, 680);  //Warte 680µs
-	gpioWrite(14, 1);
-	gpioSleep(PI_TIME_RELATIVE, 0, 20);  //Warte 680µs
-	printf("[OK] Set Output High\n");
-	gpioSetMode(14, PI_ALT0);
-	handle = serOpen("/dev/ttyAMA0", BAUDRATE, 0);
-}
-
-void sendInitFrame() {
-	sendBreak();
-	sendSyncByte();
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-}
-
-void sendActivationFrame() {
-	sendBreak();
-	sendSyncByte();
-	for (int i = 0; i < sizeof(activationFrame.frameContent); i++) {
-		serWriteByte(handle, activationFrame.frameContent[i]);
-	}
-}
-
-void sendMessageFrame() {
-	sendBreak();
-	sendSyncByte();
-	for (int i = 0; i < sizeof(messageFrame.frameContent); i++) {
-		serWriteByte(handle, messageFrame.frameContent[i]);
-	}
-}
-
-void stopMotors(){
-//	TODO set messageFrame inputs
-	sendmessageFrame();
-}
-
-void sendMessageFrame1() {
-	sendBreak();
-	sendSyncByte();
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-
-}
-//Motor-Stopfunktion
-void sendMessageFrame2() {
-	sendBreak();
-	sendSyncByte();
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-	serWriteByte(handle, 0xXX);
-}
-
-int getChecksum(int frame[]) {
-	int summe=0;
-
-	for(int i=0; i<0; i++){
-		summe += frame[i];		// nico hat das so f�r gut befunden und abgenommen
-		if (summe > 255){
-			summe -= 255;
-		}
-	}
-	return ~summe;
-}
-/*
- * Function:  setFrame
- * --------------------
- * sets the Frame data inputs to the given Frame. also sets the checksum of the frame.
- *
- *	TODO data descriptions
- *  id: ID of the frame, messageFrame=1, acivationFrame=2
- *  data0:
- *  data1:
- *  data2:
- *  data3:
- *  data4:
- *  data5:
- *  data6:
- *  data7:
- *
- *
- *  returns: an integer that is 1 for positive result and 0 for an error
- */
-
-int setFrame(int id, int data0, int data1, int data2, int data3, int data4,
-		int data5, int data6, int data7, int data8) {
-	if (id == message){
-	messageFrame.frameContent[0] = data0;
-	messageFrame.frameContent[1] = data1;
-	messageFrame.frameContent[2] = data2;
-	messageFrame.frameContent[3] = data3;
-	messageFrame.frameContent[4] = data4;
-	messageFrame.frameContent[5] = data5;
-	messageFrame.frameContent[6] = data6;
-	messageFrame.frameContent[7] = data7;
-	messageFrame.frameContent[8] = data8;
-	messageFrame.frameContent[9] = getChecksum(messageFrame.frameContent);
-	return 1;
-	}
-
-	if (id == activation){
-	activationFrame.frameContent[0] = data0;
-	activationFrame.frameContent[1] = data1;
-	activationFrame.frameContent[2] = data2;
-	activationFrame.frameContent[3] = data3;
-	activationFrame.frameContent[4] = data4;
-	activationFrame.frameContent[5] = data5;
-	activationFrame.frameContent[6] = data6;
-	activationFrame.frameContent[7] = data7;
-	activationFrame.frameContent[8] = data8;
-	activationFrame.frameContent[9] = getChecksum(activationFrame.frameContent);
-	return 1;
-	}
-	printf("Falsche oder unbekannte FrameID (%d)", id);
-	return = 0;
 }
 
 /* ***************************************** */
@@ -688,15 +495,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		gpioWrite(23, 1);
 		gpioWrite(25, 1);
 
-		sendWakeUp();
-		gpioSleep(PI_TIME_RELATIVE, 0, 310000);  //Warte 1ms
-		sendInitFrame();
-		gpioSleep(PI_TIME_RELATIVE, 0, 50000);  //Warte 1ms
-		sendActivationFrame();
-		gpioSleep(PI_TIME_RELATIVE, 0, 50000);  //Warte 1ms
-		sendMessageFrame();
-		gpioSleep(PI_TIME_RELATIVE, 0, 50000);  //Warte 1ms
-		delay(2000);
+		startMotors(0x55, 0x30, 0x55, 0x30);
 
 		gpioWrite(25, 0);
 		gpioWrite(23, 0);
@@ -707,15 +506,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		gpioWrite(23, 1);
 		gpioWrite(25, 1);
 
-		sendWakeUp();
-		gpioSleep(PI_TIME_RELATIVE, 0, 310000);
-		sendInitFrame();
-		gpioSleep(PI_TIME_RELATIVE, 0, 50000);
-		sendActivationFrame();
-		gpioSleep(PI_TIME_RELATIVE, 0, 50000);
-		sendMessageFrame2();
-		gpioSleep(PI_TIME_RELATIVE, 0, 50000);
-		delay(2000);
+		stopMotors();
 
 		gpioWrite(25, 0);
 		gpioWrite(23, 0);
@@ -882,7 +673,7 @@ int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argum
 	/*************************/
 
 	// Bibliothek um GPIOs anzusprechen
-	if (gpioInitialise() < 0) {
+	if (linInitialise() < 0) {
 		printf("Initialisierung fehlgeschlagen!\n");
 	}
 	gpioSetMode(27, PI_OUTPUT); 		// Lampe weiss
