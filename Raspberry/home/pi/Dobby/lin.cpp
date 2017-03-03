@@ -11,29 +11,35 @@
 #include <termios.h>
 #include <pigpio.h>
 #include <lin.h>
+#include <lin_p.h>
 
-int BAUDRATE = 19200;
-int handle = -1;
-
-/**
- *
- */
-enum {
-	message = 1, activation = 2, init = 3
+class Lin {
+private:
+	int BAUDRATE = 19200;
+	int handle = -1;
+	enum {
+		message = 1, activation = 2, init = 3
+	};
+	struct frame{
+		int id;
+		int frameContent[10];
+	} initFrame, messageFrame, activationFrame;
+public:
+	Lin(){
+		if (gpioInitialise() < 0)
+		{
+			printf("[FAIL] PIGPIO Initialisierung fehlgeschlagen");
+		}
+		else
+		{
+			printf("[OK] PIGPIO Initialisierung ok");
+		}
+	}
+	~Lin(){
+		gpioTerminate();
+		printf("[OK] PIGPIO beendet");
+	}
 };
-
-/**
- *
- */
-typedef struct {
-	int id;
-	int frameContent[10];
-} linFrame;
-
-linFrame initFrame;
-linFrame messageFrame;
-linFrame activationFrame;
-
 /**
  *
  */

@@ -666,6 +666,8 @@ int WebSocket_initialisierung(int argc, char **argv) {
 /* ***************************************** */
 /* ***************************************** */
 int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argumente; argv = Pointer auf Command-Array
+
+
 	gint cnt = 0;
 
 	/*************************/
