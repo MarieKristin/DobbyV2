@@ -11,19 +11,16 @@
 #include <termios.h>
 #include <pigpio.h>
 #include <lin.h>
-#include <lin_p.h>
 
 class Lin {
 private:
 	int BAUDRATE = 19200;
 	int handle = -1;
-	enum {
-		message = 1, activation = 2, init = 3
-	};
-	struct frame{
-		int id;
-		int frameContent[10];
-	} initFrame, messageFrame, activationFrame;
+
+	Frame initFrame.id = init;
+	Frame activationFrame.id = activation;
+	Frame messageFrame.id = message;
+
 public:
 	Lin(){
 		if (gpioInitialise() < 0)

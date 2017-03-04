@@ -19,11 +19,13 @@
 //Bibliothek für Socket-Verbindung zwischen Raspberry und Handy
 #include <gio/gio.h>
 #include <glib-unix.h> 			// Commandline-Bibliothek
+#include <string>
 #include <string.h>
 #include <stdio.h>
 #include <syslog.h>
 #include <jansson.h>
 #include <libwebsockets.h>
+#include <iostream>
 
 //Bibliotheken für Sensor
 #include <stdlib.h>
@@ -48,6 +50,8 @@
 #define PORT "2112"			 // Port am Sensors
 #define BACKLOG 20 			 // Maximale Verbindungen in der Warteschlage
 #define MAXDATASIZE 2000 		 // Max Datasize pro Datenausgabe des Sensors
+
+using namespace std;
 
 /* ***************************************** */
 /* Globale Variablen 			     */
@@ -84,9 +88,9 @@ unsigned int blinken(int lampe, int geschwindigkeit) {
 	int i = 0;
 	while (i != 15) {
 		gpioWrite(lampe, 1);
-		delay(geschwindigkeit); // Warte 100 ms
+		gpioDelay(geschwindigkeit); // Warte 100 ms
 		gpioWrite(lampe, 0);
-		delay(geschwindigkeit); // Warte 100 ms
+		gpioDelay(geschwindigkeit); // Warte 100 ms
 		i++;
 	}
 	return 1;
@@ -156,7 +160,7 @@ int Sensor_initialisierung() {
 	freeaddrinfo(servinfo);
 
 	gpioWrite(24, 1);
-	delay(2000);
+	gpioDelay(2000);
 	gpioWrite(24, 0);
 	return (7);
 
@@ -166,15 +170,15 @@ int Sensor_initialisierung() {
 /* Sensor-Routine 			     */
 /* ***************************************** */
 void Sensor_routine() {
-
-	char* msg = "\x02sRN LMDscandata\x03\0";
-	int len = strlen(msg);
+	//char*
+	string msg = "\x02sRN LMDscandata\x03\0";
+	int len = msg.size();
 	int numbytes = 0;
 	char buf[MAXDATASIZE];
 
-	int sent = send(sockfd, msg, len, 0);	 // Befehl zur Messwertanforderung
+	int sent = send(sockfd, msg.data(), len, 0);	 // Befehl zur Messwertanforderung
 	if (sent != -1) {
-		printf("%s gesendet, %d Bytes\n", msg, sent);
+		printf("%s gesendet, %d Bytes\n", msg.data(), sent);
 	}
 	if (sent == -1) {
 		printf("Senden fehlgeschlagen\n");
@@ -382,6 +386,7 @@ static gboolean sigint_handler() {
 /* ***************************************** */
 unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		unsigned char *buffer) {
+	string s_data = reinterpret_cast<char*>(data);
 	json_t *reply_obj;
 	char *reply_str;
 	char *reply;
@@ -389,38 +394,38 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	int ausgefuehrt = 0;
 	asprintf(&reply, "You typed \"%s\"", data);	// Füge zu den eigegebenen Daten "you typed" hinzu und schreibe in reply
 	//Test Start
-	const char lampe[] = "WebCamera";
-	int test = strcmp(data, lampe); // Vergleiche ob das eigegebene Wort dem Wert von "lampe" entspricht
+	string lampe = "WebCamera";
+	int test = s_data.compare(lampe); // Vergleiche ob das eigegebene Wort dem Wert von "lampe" entspricht
 	if (test == 0) {
 		blinken(27, 100);
 	}
 	test = 7; 										 // == 0 ? -> ist gleich
-	const char weiss[] = "TestW";
-	test = strcmp(data, weiss);
+	string weiss = "TestW";
+	test = s_data.compare(weiss);
 	if (test == 0) {
 		blinken(27, 200);
 	}
 	test = 7;
-	const char rot[] = "TestR";
-	test = strcmp(data, rot);
+	string rot = "TestR";
+	test = s_data.compare(rot);
 	if (test == 0) {
 		blinken(23, 200);
 	}
 	test = 7;
-	const char gelb[] = "TestGe";
-	test = strcmp(data, gelb);
+	string gelb = "TestGe";
+	test = s_data.compare(gelb);
 	if (test == 0) {
 		blinken(25, 200);
 	}
 	test = 7;
-	const char gruen[] = "TestGr";
-	test = strcmp(data, gruen);
+	string gruen = "TestGr";
+	test = s_data.compare(gruen);
 	if (test == 0) {
 		blinken(24, 200);
 	}
 	test = 7;
-	const char start[] = "Start";
-	test = strcmp(data, start);
+	string start = "Start";
+	test = s_data.compare(start);
 	while (test == 0 && ausgefuehrt != 1) {
 		if (ausloeser == 0) {
 			ausgefuehrt = blinken(24, 50);
@@ -430,8 +435,8 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	}
 	ausgefuehrt = 0;
 	test = 7;
-	const char stop[] = "Stop";
-	test = strcmp(data, stop);
+	string stop = "Stop";
+	test = s_data.compare(stop);
 	while (test == 0 && ausgefuehrt != 1) {
 		if (ausloeser == 0) {
 			ausgefuehrt = blinken(23, 50);
@@ -441,8 +446,8 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	}
 	ausgefuehrt = 0;
 	test = 7;
-	const char left[] = "Left";
-	test = strcmp(data, left);
+	string left = "Left";
+	test = s_data.compare(left);
 	while (ausgefuehrt != 1 && test == 0) {
 		if (ausloeser == 0) {
 			ausgefuehrt = blinken(25, 50);
@@ -452,8 +457,8 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	}
 	ausgefuehrt = 0;
 	test = 7;
-	const char right[] = "Right";
-	test = strcmp(data, right);
+	string right = "Right";
+	test = s_data.compare(right);
 	while (ausgefuehrt != 1 && test == 0) {
 		if (ausloeser == 0) {
 			ausgefuehrt = blinken(27, 50);
@@ -463,8 +468,8 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	}
 	ausgefuehrt = 0;
 	test = 7;
-	const char sensInit[] = "SensInit";
-	test = strcmp(data, sensInit);
+	string sensInit = "SensInit";
+	test = s_data.compare(sensInit);
 	if (test == 0) {
 		gpioWrite(24, 0);
 		gpioWrite(27, 1);
@@ -472,25 +477,25 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		sens_init = Sensor_initialisierung();
 		if (sens_init != 7) {
 			gpioWrite(23, 1);
-			delay(2000);
+			gpioDelay(2000);
 			gpioWrite(23, 0);
 		}
 		gpioWrite(25, 0);
 		gpioWrite(27, 0);
 	}
 	test = 7;
-	const char sensOut[] = "SensOff";
-	test = strcmp(data, sensOut);
+	string sensOut = "SensOff";
+	test = s_data.compare(sensOut);
 	if (test == 0) {
 		gpioWrite(23, 1);
 		close(sockfd);
 		sens_init = 0;
 
-		delay(2000);
+		gpioDelay(2000);
 		gpioWrite(23, 0);
 	}
-	const char MotorOn[] = "MotorOn";
-	test = strcmp(data, MotorOn);
+	string motorOn = "MotorOn";
+	test = s_data.compare(motorOn);
 	if (test == 0) {
 		gpioWrite(23, 1);
 		gpioWrite(25, 1);
@@ -500,8 +505,8 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		gpioWrite(25, 0);
 		gpioWrite(23, 0);
 	}
-	const char MotorOff[] = "MotorOff";
-	test = strcmp(data, MotorOff);
+	string motorOff = "MotorOff";
+	test = s_data.compare(motorOff);
 	if (test == 0) {
 		gpioWrite(23, 1);
 		gpioWrite(25, 1);
@@ -650,13 +655,13 @@ int WebSocket_initialisierung(int argc, char **argv) {
 		print_log(LOG_ERR, "(main) libwebsocket context init failed\n");
 		return -1;
 		gpioWrite(23, 1);
-		delay(2000);
+		gpioDelay(2000);
 		gpioWrite(23, 0);
 	}
 	print_log(LOG_INFO, "(main) context - %p\n", context);
 
 	gpioWrite(24, 1);
-	delay(2000);
+	gpioDelay(2000);
 	gpioWrite(24, 0);
 }
 
@@ -666,69 +671,9 @@ int WebSocket_initialisierung(int argc, char **argv) {
 /* ***************************************** */
 /* ***************************************** */
 int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argumente; argv = Pointer auf Command-Array
+	Lin* linConnect = new Lin();
 
 
-	gint cnt = 0;
-
-	/*************************/
-	/* Initialisierungsphase */
-	/*************************/
-
-	// Bibliothek um GPIOs anzusprechen
-	if (linInitialise() < 0) {
-		printf("Initialisierung fehlgeschlagen!\n");
-	}
-	gpioSetMode(27, PI_OUTPUT); 		// Lampe weiss
-	gpioSetMode(23, PI_OUTPUT); 		// Lampe rot
-	gpioSetMode(24, PI_OUTPUT);		// Lampe gruen
-	gpioSetMode(25, PI_OUTPUT);		// Lampe gelb
-	//
-	gpioWrite(25, 1);
-	gpioWrite(27, 1);
-	delay(2000);
-	gpioWrite(24, 0);
-	WebSocket_initialisierung(argc, argv);
-	// Status für Websocket-Init wird in Funktion implementiert
-	sens_init = Sensor_initialisierung();
-	// Status für Sensor-Init wird in Funktion implementiert
-	if (sens_init != 7) {
-		gpioWrite(23, 1);
-		delay(2000);
-		gpioWrite(23, 0);
-	}
-
-	gpioWrite(25, 0);
-	gpioWrite(27, 0);
-
-	/*****************/
-	/* Hauptschleife */
-	/*****************/
-	while (cnt >= 0 && !exit_loop) {
-		gpioWrite(24, 1);
-		if (sens_init == 7) {
-			Sensor_routine();
-		}
-
-		cnt = libwebsocket_service(context, 10);// u.a. neue Verbindungen werden akzeptiert ; ggf. setzen des send_notification
-		if (send_notification) {
-			libwebsocket_callback_on_writable_all_protocol(&protocols[0]);
-			send_notification = FALSE;
-		}
-		g_main_context_iteration(NULL, FALSE);
-	}
-
-	/* Abbruchroutine */
-	out: if (context != NULL)
-		libwebsocket_context_destroy(context);
-	if (signal_id > 0)
-		g_source_remove(signal_id);
-	if (option_context != NULL)
-		g_option_context_free(option_context);
-	close(sockfd); 								// Close Sensor-Socket
-#ifndef HAVE_SYSTEMD
-	closelog();
-#endif
-
-	return exit_value;
+	return 0;
 }
 

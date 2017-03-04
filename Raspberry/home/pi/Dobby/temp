@@ -1,0 +1,63 @@
+Main:
+gint cnt = 0;
+
+	/*************************/
+	/* Initialisierungsphase */
+	/*************************/
+
+	// Bibliothek um GPIOs anzusprechen
+	if (linInitialise() < 0) {
+		printf("Initialisierung fehlgeschlagen!\n");
+	}
+	gpioSetMode(27, PI_OUTPUT); 		// Lampe weiss
+	gpioSetMode(23, PI_OUTPUT); 		// Lampe rot
+	gpioSetMode(24, PI_OUTPUT);		// Lampe gruen
+	gpioSetMode(25, PI_OUTPUT);		// Lampe gelb
+	//
+	gpioWrite(25, 1);
+	gpioWrite(27, 1);
+	delay(2000);
+	gpioWrite(24, 0);
+	WebSocket_initialisierung(argc, argv);
+	// Status für Websocket-Init wird in Funktion implementiert
+	sens_init = Sensor_initialisierung();
+	// Status für Sensor-Init wird in Funktion implementiert
+	if (sens_init != 7) {
+		gpioWrite(23, 1);
+		delay(2000);
+		gpioWrite(23, 0);
+	}
+
+	gpioWrite(25, 0);
+	gpioWrite(27, 0);
+
+	/*****************/
+	/* Hauptschleife */
+	/*****************/
+	while (cnt >= 0 && !exit_loop) {
+		gpioWrite(24, 1);
+		if (sens_init == 7) {
+			Sensor_routine();
+		}
+
+		cnt = libwebsocket_service(context, 10);// u.a. neue Verbindungen werden akzeptiert ; ggf. setzen des send_notification
+		if (send_notification) {
+			libwebsocket_callback_on_writable_all_protocol(&protocols[0]);
+			send_notification = FALSE;
+		}
+		g_main_context_iteration(NULL, FALSE);
+	}
+
+	/* Abbruchroutine */
+	out: if (context != NULL)
+		libwebsocket_context_destroy(context);
+	if (signal_id > 0)
+		g_source_remove(signal_id);
+	if (option_context != NULL)
+		g_option_context_free(option_context);
+	close(sockfd); 								// Close Sensor-Socket
+#ifndef HAVE_SYSTEMD
+	closelog();
+#endif
+
+	return exit_value;
