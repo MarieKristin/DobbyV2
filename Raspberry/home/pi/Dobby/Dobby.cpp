@@ -16,7 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-//Bibliothek fÃ¼r Socket-Verbindung zwischen Raspberry und Handy
+//Bibliothek für Socket-Verbindung zwischen Raspberry und Handy
 #include <gio/gio.h>
 #include <glib-unix.h> 			// Commandline-Bibliothek
 #include <string>
@@ -27,7 +27,7 @@
 #include <libwebsockets.h>
 #include <iostream>
 
-//Bibliotheken fÃ¼r Sensor
+//Bibliotheken für Sensor
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
@@ -37,7 +37,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-//Bibliotheken fÃ¼r Motor
+//Bibliotheken für Motor
 #include <stdlib.h>
 #include <stdarg.h>
 #include <fcntl.h>
@@ -57,10 +57,13 @@ using namespace std;
 /* Globale Variablen 			     */
 /* ***************************************** */
 
+//Motoren
+Lin *lin;
+
 //Sensor
-int sockfd = 0;				 // Socket-File-Description fÃ¼r Sensor
+int sockfd = 0;				 // Socket-File-Description für Sensor
 int sens_init = 0;			 // Sensor-Routine Enable ; 7=enable; 0=disable
-int ausloeser = 0;			 // AuslÃ¶serwinkel Gegenstand im Sensorfeld
+int ausloeser = 0;			 // Auslöserwinkel Gegenstand im Sensorfeld
 
 //WebSocketServer
 static struct libwebsocket_context *context;
@@ -193,7 +196,7 @@ void Sensor_routine() {
 	char Messdateneinheit[6] = "DIST1";	// Startwert der Messkomponenten zur Auswertung
 	int pos_search = 0;							//
 	int pos_text = 0;							// Aktuelle Stelle im Suchstring
-	int len_search = 5;					// LÃ¤nge des Suchstringes (der Needle)
+	int len_search = 5;					// Länge des Suchstringes (der Needle)
 	int len_text = MAXDATASIZE;
 
 	for (pos_text = 0; pos_text < len_text - len_search; ++pos_text)// Funktion zum Suchen des Startwertes der Messkomponenten
@@ -334,10 +337,10 @@ GOptionEntry entries[] = { { "no-daemon", 'n', 0, G_OPTION_ARG_NONE,
 		&opt_no_daemon, "Don't detach WebSocketsServer into the background",
 		NULL },		 // LongName, shortName, flags,
 		// OptionArgument, Argument_Data,
-		// ErklÃ¤rung; App ermÃ¶glicht kein
+		// Erklärung; App ermöglicht kein
 		// Background-Laufen
 		{ "port", 'p', 0, G_OPTION_ARG_INT, &port,
-				"Port number [default: 8080]", NULL }, // LongName, shortName, flags, OptionArgument, Argument_Data, ErklÃ¤rung
+				"Port number [default: 8080]", NULL }, // LongName, shortName, flags, OptionArgument, Argument_Data, Erklärung
 		{ NULL } };
 
 /* ***************************************** */
@@ -346,7 +349,7 @@ GOptionEntry entries[] = { { "no-daemon", 'n', 0, G_OPTION_ARG_NONE,
 struct per_session_data {
 	unsigned char buf[LWS_SEND_BUFFER_PRE_PADDING + MAX_PAYLOAD
 			+ LWS_SEND_BUFFER_POST_PADDING]; 				// Daten
-	unsigned int len; 												// LÃ¤nge
+	unsigned int len; 												// Länge
 	unsigned int index; 												// Index
 };
 
@@ -373,7 +376,7 @@ static void print_log(gint msg_priority, const gchar *msg, ...) {
 }
 
 /* ***************************************** */
-/* Interrupt durch Tastatur ausgelÃ¶st 	     */
+/* Interrupt durch Tastatur ausgelöst 	     */
 /* ***************************************** */
 static gboolean sigint_handler() {
 	libwebsocket_cancel_service(context); 					// Beende Service
@@ -392,7 +395,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	char *reply;
 	int reply_len;
 	int ausgefuehrt = 0;
-	asprintf(&reply, "You typed \"%s\"", data);	// FÃ¼ge zu den eigegebenen Daten "you typed" hinzu und schreibe in reply
+	asprintf(&reply, "You typed \"%s\"", data);	// Füge zu den eigegebenen Daten "you typed" hinzu und schreibe in reply
 	//Test Start
 	string lampe = "WebCamera";
 	int test = s_data.compare(lampe); // Vergleiche ob das eigegebene Wort dem Wert von "lampe" entspricht
@@ -500,7 +503,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		gpioWrite(23, 1);
 		gpioWrite(25, 1);
 
-		startMotors(0x55, 0x30, 0x55, 0x30);
+		lin->startMotors(0x55, 0x30, 0x55, 0x30);
 
 		gpioWrite(25, 0);
 		gpioWrite(23, 0);
@@ -511,7 +514,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		gpioWrite(23, 1);
 		gpioWrite(25, 1);
 
-		stopMotors();
+		lin->stopMotors();
 
 		gpioWrite(25, 0);
 		gpioWrite(23, 0);
@@ -520,12 +523,12 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	// Test Ende
 	reply_obj = json_pack("{s:s, s:s}", "Type", "standard", "Message", reply); // Erstellung JSON-Objekt -> "Type standart", "Message REPLY"
 	reply_str = json_dumps(reply_obj, 0);
-	reply_len = strlen(reply_str); 						// LÃ¤nge der Antwort
-	memcpy(buffer, reply_str, reply_len); // Kopie an Zieladresse "buffer" von Antwort-Pointer, LÃ¤nge der Antwort
+	reply_len = strlen(reply_str); 						// Länge der Antwort
+	memcpy(buffer, reply_str, reply_len); // Kopie an Zieladresse "buffer" von Antwort-Pointer, Länge der Antwort
 	json_decref(reply_obj); 						// gibt das JSON-Objekt frei
 	free(reply); 								// gibt den String Antwort frei
 	free(reply_str); 						// gibt den String "reply_str" frei
-	return reply_len; 					// gibt die LÃ¤nge der Antwort zurÃ¼ck
+	return reply_len; 					// gibt die Länge der Antwort zurück
 }
 
 /* 	*****************************************	*/
@@ -572,12 +575,11 @@ static int my_callback(struct libwebsocket_context *context,
 		if (len > MAX_PAYLOAD) {
 			print_log(LOG_ERR,
 					"(%p) (callback) packet bigger than %u, hanging up\n", wsi,
-					MAX_PAYLOAD);	// Falls maximale LÃ¤nge erreicht
+					MAX_PAYLOAD);	// Falls maximale Länge erreicht
 			return 1;
 		}
 
-		psd->len = prepare_reply(wsi, in,
-				&psd->buf[LWS_SEND_BUFFER_PRE_PADDING]);
+		psd->len = prepare_reply(wsi, (unsigned char*) in, &psd->buf[LWS_SEND_BUFFER_PRE_PADDING]);
 		if (psd->len > 0) {
 			libwebsocket_callback_on_writable(context, wsi);
 		}
@@ -595,7 +597,7 @@ static int my_callback(struct libwebsocket_context *context,
 /* ***************************************** */
 static struct libwebsocket_protocols protocols[] = { { "my_protocol", // Protokoll-Name
 		my_callback, 										// Callback-Funktion
-		sizeof(struct per_session_data) }, 			// DatengrÃ¶ÃŸe je Session
+		sizeof(struct per_session_data) }, 			// Datengröße je Session
 		{ NULL, NULL, 0 } };
 
 /* ***************************************** */
@@ -607,11 +609,11 @@ int WebSocket_initialisierung(int argc, char **argv) {
 	gint signal_id = 0;
 	struct lws_context_creation_info info;
 
-	/* Phase 1: Optionen Ã¼berprÃ¼fen	   */
-	/* Commandline Optionen Ã¼berprÃ¼fen */
+	/* Phase 1: Optionen überprüfen	   */
+	/* Commandline Optionen überprüfen */
 	option_context = g_option_context_new("- WebSocketsServer"); // WebSockets-Optionen deklarieren z.B. <Pfad> -h --no-daemon
-	g_option_context_add_main_entries(option_context, entries, NULL); // Optionen hinzufÃ¼gen
-	if (!g_option_context_parse(option_context, &argc, &argv, &error)) // ÃœberprÃ¼ft/Parst die Command-Line-Options -> keine Fehler: TRUE
+	g_option_context_add_main_entries(option_context, entries, NULL); // Optionen hinzufügen
+	if (!g_option_context_parse(option_context, &argc, &argv, &error)) // Überprüft/Parst die Command-Line-Options -> keine Fehler: TRUE
 			{
 		g_printerr("%s: %s\n", argv[0], error->message);
 		exit_value = EXIT_FAILURE;
@@ -633,7 +635,7 @@ int WebSocket_initialisierung(int argc, char **argv) {
 	/* Minimalkonfiguration			   */
 	/* fill 'lws_context_creation_info' struct 	   */
 	memset(&info, 0, sizeof info); 						// Speicherreservierung
-	info.port = port; 								// Port fÃ¼r die Verbindung
+	info.port = port; 								// Port für die Verbindung
 	info.iface = "wlan0";
 	//info.iface = NULL; 										// keine Wertzuweisung
 	info.protocols = protocols; // Beschreibung des Protokolls in Zeile 284 (struct)
@@ -646,7 +648,7 @@ int WebSocket_initialisierung(int argc, char **argv) {
 
 	/* Phase 4: Interrupt durch Tastatur */
 	/* handle SIGINT		       */
-	signal_id = g_unix_signal_add(SIGINT, sigint_handler, NULL); // Signalnummer (2), Funktionsaufruf
+	signal_id = g_unix_signal_add(SIGINT, (GSourceFunc) sigint_handler, NULL); // Signalnummer (2), Funktionsaufruf
 
 	/* Phase 5: Erstellung "listening" - Serverinstanz */
 	/* create context 				    */
