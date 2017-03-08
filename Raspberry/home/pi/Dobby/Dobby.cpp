@@ -38,9 +38,6 @@
 #include <arpa/inet.h>
 
 //Bibliotheken für Motor
-#include <stdlib.h>
-#include <stdarg.h>
-#include <fcntl.h>
 #include <termios.h>
 #include <pigpio.h>
 #include "Lin.h"
@@ -76,228 +73,6 @@ unsigned int blinken(int lampe, int geschwindigkeit) {
 		i++;
 	}
 	return 1;
-}
-
-/* ***************************************** */
-/* ***************************************** */
-/* Sensor-Funktionen */
-/* ***************************************** */
-/* ***************************************** */
-
-/* ***************************************** */
-/* Socketadresse - IPv4 or IPv6: 	     */
-/* ***************************************** */
-void *get_in_addr(struct sockaddr *sa) {
-
-	if (sa->sa_family == AF_INET) {
-		return &(((struct sockaddr_in*) sa)->sin_addr);
-	}
-	return &(((struct sockaddr_in6*) sa)->sin6_addr);
-}
-
-/* ***************************************** */
-/* Initialisierung der Sensor-Verbindung   	 */
-/* ***************************************** */
-int Sensor_initialisierung() {
-	const char* hostname = "192.168.111.111";
-	int new_fd;
-	int numbytes = 0;
-	socklen_t addr_size;
-	char buf[MAXDATASIZE];
-	struct sockaddr_storage their_addr;
-	struct addrinfo hints, *servinfo, *p;
-	int rv;
-	char s[INET6_ADDRSTRLEN];
-	memset(&hints, 0, sizeof hints);
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_PASSIVE;
-	if ((rv = getaddrinfo(hostname, PORT, &hints, &servinfo)) != 0) {
-		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
-		return 1;
-	}
-	// loop through all the results and connect to the first we can
-	for (p = servinfo; p != NULL; p = p->ai_next) { 				// Socket
-		if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol))
-				== -1) {
-			perror("client: socket");
-			continue;
-		}
-		if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) { 	// Connect
-			// close(sockfd);
-			perror("client: connect");
-			continue;
-		}
-		break;
-	}
-	if (p == NULL) {
-		fprintf(stderr, "client: failed to connect\n");
-		return 2;
-	}
-	if (NULL
-			!= inet_ntop(p->ai_family,
-					get_in_addr((struct sockaddr *) p->ai_addr), s, sizeof s)) {
-		printf("client: connecting to %s\n", s);
-	}
-	freeaddrinfo(servinfo);
-
-	gpioWrite(24, 1);
-	gpioDelay(2000);
-	gpioWrite(24, 0);
-	return (7);
-
-}
-
-/* ***************************************** */
-/* Sensor-Routine 			     */
-/* ***************************************** */
-void Sensor_routine() {
-	//char*
-	string msg = "\x02sRN LMDscandata\x03\0";
-	int len = msg.size();
-	int numbytes = 0;
-	char buf[MAXDATASIZE];
-
-	int sent = send(sockfd, msg.data(), len, 0);	 // Befehl zur Messwertanforderung
-	if (sent != -1) {
-		printf("%s gesendet, %d Bytes\n", msg.data(), sent);
-	}
-	if (sent == -1) {
-		printf("Senden fehlgeschlagen\n");
-	}
-
-	gpioInitialise();
-
-	numbytes = recv(sockfd, buf, MAXDATASIZE - 1, 0);	// Empfang der Messwerte
-	buf[numbytes] = '\0';					// Abschluss des Messwert-Strings
-	printf("client: received '%s'\n", buf);
-
-	char Messdateneinheit[6] = "DIST1";	// Startwert der Messkomponenten zur Auswertung
-	int pos_search = 0;							//
-	int pos_text = 0;							// Aktuelle Stelle im Suchstring
-	int len_search = 5;					// Länge des Suchstringes (der Needle)
-	int len_text = MAXDATASIZE;
-
-	for (pos_text = 0; pos_text < len_text - len_search; ++pos_text)// Funktion zum Suchen des Startwertes der Messkomponenten
-			{
-		if (buf[pos_text] == Messdateneinheit[pos_search]) {
-			++pos_search;
-			if (pos_search == len_search) {
-				// match
-				printf("match from %d to %d\n", pos_text - len_search,
-						pos_text);
-				break;
-			}
-		} else {
-			pos_text -= pos_search;
-			pos_search = 0;
-		}
-	}
-
-	int i = (pos_text - len_search) + 1;// Position des 1. Buchstabes der Needle
-	int k = 0;							// Laufvariablen
-	char Messdateninhalt[6];					// 1. Argument
-	char Skalierungsfaktor[9];					// 2. Argument
-	char Skalierungsoffset[9];					// 3. Argument
-	char Startwinkel[9];						// 4. Argument
-	char Winkelschrittweite[5];					// 5. Argument
-	char Anzahl_Daten[5];						// 6. Argument
-
-	while (buf[i] != ' ') {
-		Messdateninhalt[k] = buf[i];
-		k++;
-		i++;
-	}
-	Messdateninhalt[6] = '\0';
-	i++;
-	k = 0;
-	while (buf[i] != ' ') {
-		Skalierungsfaktor[k] = buf[i];
-		k++;
-		i++;
-	}
-	Skalierungsfaktor[9] = '\0';
-	i++;
-	k = 0;
-	while (buf[i] != ' ') {
-		Skalierungsoffset[k] = buf[i];
-		k++;
-		i++;
-	}
-	Skalierungsoffset[9] = '\0';
-	i++;
-	k = 0;
-	while (buf[i] != ' ') {
-		Startwinkel[k] = buf[i];
-		k++;
-		i++;
-	}
-	Startwinkel[9] = '\0';
-	i++;
-	k = 0;
-	while (buf[i] != ' ') {
-		Winkelschrittweite[k] = buf[i];
-		k++;
-		i++;
-	}
-	Winkelschrittweite[5] = '\0';
-	i++;
-	k = 0;
-	while (buf[i] != ' ') {
-		Anzahl_Daten[k] = buf[i];
-		k++;
-		i++;
-	}
-	Anzahl_Daten[5] = '\0';
-	i++;
-
-	int l = 0;
-	char Entfernung[5];										// Entfernung in mm
-	int AnzahlDaten = (int) strtol(Anzahl_Daten, NULL, 16);
-	printf("%d\n", AnzahlDaten);
-
-	for (k = 1; k < 181; k++) {
-		while (buf[i] != ' ') {
-			Entfernung[l] = buf[i];
-			l++;
-			i++;
-		}
-
-		if (l <= 5) {
-			Entfernung[l] = '\0';
-		}
-		int entfernung = (int) strtol(Entfernung, NULL, 16);
-
-		printf("%d %d", k, entfernung);
-		if (entfernung < 10) {
-		} else {
-			if (entfernung < 400) {
-				if (entfernung < 180) {
-					ausloeser = k;
-					gpioWrite(27, 1);
-					printf("STOP\n");
-				} else {
-					printf("ACHTUNG\n");
-					if (k == ausloeser) {
-						gpioWrite(27, 0);
-						ausloeser = 0;
-					}
-				}
-			} else {
-				printf("alles ok\n");
-				if (k == ausloeser) {
-					gpioWrite(27, 0);
-					ausloeser = 0;
-				}
-			}
-		}
-
-		i++;
-		l = 0;
-	}
-
-	printf("Ende-Sensor\n");
-
 }
 
 /* ***************************************** */
@@ -409,7 +184,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	string start = "Start";
 	test = s_data.compare(start);
 	while (test == 0 && ausgefuehrt != 1) {
-		if (ausloeser == 0) {
+		if (sensor->getAusloeser() == 0) {
 			ausgefuehrt = blinken(24, 50);
 		} else {
 			Sensor_routine();
@@ -420,7 +195,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	string stop = "Stop";
 	test = s_data.compare(stop);
 	while (test == 0 && ausgefuehrt != 1) {
-		if (ausloeser == 0) {
+		if (sensor->getAusloeser() == 0) {
 			ausgefuehrt = blinken(23, 50);
 		} else {
 			Sensor_routine();
@@ -431,7 +206,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	string left = "Left";
 	test = s_data.compare(left);
 	while (ausgefuehrt != 1 && test == 0) {
-		if (ausloeser == 0) {
+		if (sensor->getAusloeser() == 0) {
 			ausgefuehrt = blinken(25, 50);
 		} else {
 			Sensor_routine();
@@ -442,7 +217,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	string right = "Right";
 	test = s_data.compare(right);
 	while (ausgefuehrt != 1 && test == 0) {
-		if (ausloeser == 0) {
+		if (sensor->getAusloeser() == 0) {
 			ausgefuehrt = blinken(27, 50);
 		} else {
 			Sensor_routine();
@@ -456,8 +231,8 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		gpioWrite(24, 0);
 		gpioWrite(27, 1);
 		gpioWrite(25, 1);
-		sens_init = Sensor_initialisierung();
-		if (sens_init != 7) {
+		sensor->initialize();
+		if (sensor->getSensorRoutine() != 7) {
 			gpioWrite(23, 1);
 			gpioDelay(2000);
 			gpioWrite(23, 0);
@@ -470,8 +245,8 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	test = s_data.compare(sensOut);
 	if (test == 0) {
 		gpioWrite(23, 1);
-		close(sockfd);
-		sens_init = 0;
+
+		sensor->close();
 
 		gpioDelay(2000);
 		gpioWrite(23, 0);
@@ -673,9 +448,11 @@ int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argum
 		gpioWrite(24, 0);
 		WebSocket_initialisierung(argc, argv);
 		// Status fÃ¼r Websocket-Init wird in Funktion implementiert
-		sens_init = Sensor_initialisierung();
+
+
+		sensor->initialize();
 		// Status fÃ¼r Sensor-Init wird in Funktion implementiert
-		if (sens_init != 7) {
+		if (sensor->getSensorRoutine() != 7) {
 			gpioWrite(23, 1);
 			gpioDelay(2000);
 			gpioWrite(23, 0);
@@ -689,8 +466,8 @@ int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argum
 		/*****************/
 		while (cnt >= 0 && !exit_loop) {
 			gpioWrite(24, 1);
-			if (sens_init == 7) {
-				Sensor_routine();
+			if (sensor->getSensorRoutine() == 7) {
+				sensor->startRoutine();
 			}
 
 			cnt = libwebsocket_service(context, 10);// u.a. neue Verbindungen werden akzeptiert ; ggf. setzen des send_notification
@@ -708,7 +485,9 @@ int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argum
 			g_source_remove(signal_id);
 		if (option_context != NULL)
 			g_option_context_free(option_context);
-		close(sockfd); 								// Close Sensor-Socket
+
+		sensor->closeSensor();			// Close Sensor-Socket
+
 	#ifndef HAVE_SYSTEMD
 		closelog();
 	#endif

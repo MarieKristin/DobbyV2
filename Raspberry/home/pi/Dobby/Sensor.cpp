@@ -6,12 +6,51 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <sensor.h>
+#include "Sensor.h"
 
-/* ***************************************** */
-/* Socketadresse - IPv4 or IPv6: 	     */
-/* ***************************************** */
-void *get_in_addr(struct sockaddr *sa) {
+//Sensor
+int Sensor::sockfd = 0;				 // Socket-File-Description für Sensor
+int Sensor::sens_init = 0;			 // Sensor-Routine Enable ; 7=enable; 0=disable
+int Sensor::ausloeser = 0;			 // Auslöserwinkel Gegenstand im Sensorfeld
+
+Sensor::Sensor(){
+
+}
+
+Sensor::~Sensor(){
+
+}
+
+void Sensor::closeSensor(){
+	close(sockfd);
+	setSensorRoutine(0);
+}
+
+void Sensor::setAusloeser(int value){
+	ausloeser = value;
+}
+
+int Sensor::getAusloeser(){
+	return ausloeser;
+}
+
+void Sensor::setSocketFileDescription(int value){
+	sockfd = value;
+}
+
+int Sensor::getSocketFileDescription(){
+	return sockfd;
+}
+
+void Sensor::setSensorRoutine(int value){
+	sens_init = value;
+}
+
+int Sensor::getSensorRoutine(){
+	return sens_init;
+}
+
+void* Sensor::get_in_addr(struct sockaddr *sa) {
 
 	if (sa->sa_family == AF_INET) {
 		return &(((struct sockaddr_in*) sa)->sin_addr);
@@ -19,10 +58,7 @@ void *get_in_addr(struct sockaddr *sa) {
 	return &(((struct sockaddr_in6*) sa)->sin6_addr);
 }
 
-/* ***************************************** */
-/* Initialisierung der Sensor-Verbindung   	 */
-/* ***************************************** */
-int Sensor_initialisierung() {
+void Sensor::initialize() {
 	const char* hostname = "192.168.111.111";
 	int new_fd;
 	int numbytes = 0;
@@ -38,7 +74,7 @@ int Sensor_initialisierung() {
 	hints.ai_flags = AI_PASSIVE;
 	if ((rv = getaddrinfo(hostname, PORT, &hints, &servinfo)) != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
-		return 1;
+		setSensorRoutine(1);
 	}
 	// loop through all the results and connect to the first we can
 	for (p = servinfo; p != NULL; p = p->ai_next) { 				// Socket
@@ -56,7 +92,7 @@ int Sensor_initialisierung() {
 	}
 	if (p == NULL) {
 		fprintf(stderr, "client: failed to connect\n");
-		return 2;
+		setSensorRoutine(2);
 	}
 	if (NULL
 			!= inet_ntop(p->ai_family,
@@ -66,25 +102,21 @@ int Sensor_initialisierung() {
 	freeaddrinfo(servinfo);
 
 	gpioWrite(24, 1);
-	delay(2000);
+	gpioDelay(2000);
 	gpioWrite(24, 0);
-	return (7);
+	setSensorRoutine(7);
+
 }
 
-
-/* ***************************************** */
-/* Sensor-Routine 			     */
-/* ***************************************** */
-void Sensor_routine() {
-
-	char* msg = "\x02sRN LMDscandata\x03\0";
-	int len = strlen(msg);
+void Sensor::startRoutine() {
+	string msg = "\x02sRN LMDscandata\x03\0";
+	int len = msg.size();
 	int numbytes = 0;
 	char buf[MAXDATASIZE];
 
-	int sent = send(sockfd, msg, len, 0);	 // Befehl zur Messwertanforderung
+	int sent = send(sockfd, msg.data(), len, 0);	 // Befehl zur Messwertanforderung
 	if (sent != -1) {
-		printf("%s gesendet, %d Bytes\n", msg, sent);
+		printf("%s gesendet, %d Bytes\n", msg.data(), sent);
 	}
 	if (sent == -1) {
 		printf("Senden fehlgeschlagen\n");
@@ -99,7 +131,7 @@ void Sensor_routine() {
 	char Messdateneinheit[6] = "DIST1";	// Startwert der Messkomponenten zur Auswertung
 	int pos_search = 0;							//
 	int pos_text = 0;							// Aktuelle Stelle im Suchstring
-	int len_search = 5;					// LÃ¤nge des Suchstringes (der Needle)
+	int len_search = 5;					// Länge des Suchstringes (der Needle)
 	int len_text = MAXDATASIZE;
 
 	for (pos_text = 0; pos_text < len_text - len_search; ++pos_text)// Funktion zum Suchen des Startwertes der Messkomponenten
@@ -215,8 +247,12 @@ void Sensor_routine() {
 				}
 			}
 		}
+
 		i++;
 		l = 0;
 	}
+
 	printf("Ende-Sensor\n");
+
 }
+

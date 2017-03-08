@@ -6,10 +6,7 @@
 
 Lin *lin = new Lin();
 
-//Sensor
-int sockfd = 0;				 // Socket-File-Description für Sensor
-int sens_init = 0;			 // Sensor-Routine Enable ; 7=enable; 0=disable
-int ausloeser = 0;			 // Auslöserwinkel Gegenstand im Sensorfeld
+Sensor *sensor = new Sensor();
 
 //WebSocketServer
 static struct libwebsocket_context *context;
