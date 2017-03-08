@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.6)
 
 project(Dobby)
 
-enable_language(C)
+enable_language(CXX)
 
 set(CMAKE_C_FLAGS_DEBUG "-Wall -Wextra -Wno-missing-field-initializers -Wno-unused-parameter -DDEBUG -g -O0 -pipe")
 set(CMAKE_C_FLAGS_RELEASE "-Wall -Wextra -Wno-missing-field-initializers -Wno-unused-parameter -O2 -pipe -fomit-frame-pointer")
@@ -19,7 +19,7 @@ pkg_check_modules(GIO2 REQUIRED gio-2.0)
 
 add_definitions(${OpenSSL_CFLAGS} ${WEBSOCK_CFLAGS} ${JSON_CFLAGS} ${GLIB2_CFLAGS} ${GIO2_CFLAGS})
 
-set(SRCS Dobby.c lin.c)
+set(SRCS Frame.cpp Lin.cpp Dobby.cpp)
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${WIRINGPI_INCLUDE_DIRS})
 include_directories(${pigpio_INCLUDE_DIRS})
