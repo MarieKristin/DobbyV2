@@ -36,6 +36,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include "Sensor.h"
 
 //Bibliotheken für Motor
 #include <termios.h>
