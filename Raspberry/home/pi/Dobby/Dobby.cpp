@@ -43,7 +43,10 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <pigpio.h>
-#include <lin.h>
+#include "Lin.h"
+#include "Frame.h"
+#include "Global.h"
+
 
 // #define _GNU_SOURCE
 #define MAX_PAYLOAD 10000		 // Max Datasize der Socket-Verbindungen pro Task
@@ -53,30 +56,6 @@
 
 using namespace std;
 
-/* ***************************************** */
-/* Globale Variablen 			     */
-/* ***************************************** */
-
-//Motoren
-Lin *lin;
-
-//Sensor
-int sockfd = 0;				 // Socket-File-Description für Sensor
-int sens_init = 0;			 // Sensor-Routine Enable ; 7=enable; 0=disable
-int ausloeser = 0;			 // Auslöserwinkel Gegenstand im Sensorfeld
-
-//WebSocketServer
-static struct libwebsocket_context *context;
-char *notification;
-gboolean opt_no_daemon = FALSE;
-gboolean exit_loop = FALSE;
-gboolean send_notification = FALSE;
-gint port = 8080;
-int signal_id = 0;
-GOptionContext *option_context = NULL;
-gint exit_value = EXIT_SUCCESS;
-
-struct termios options;
 
 /* ***************************************** */
 /* ***************************************** */
@@ -673,8 +652,68 @@ int WebSocket_initialisierung(int argc, char **argv) {
 /* ***************************************** */
 /* ***************************************** */
 int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argumente; argv = Pointer auf Command-Array
-	Lin* linConnect = new Lin();
+	gint cnt = 0;
 
+		/*************************/
+		/* Initialisierungsphase */
+		/*************************/
+
+		// Bibliothek um GPIOs anzusprechen
+		if (lin->linInitialize() < 0) {
+			printf("Initialisierung fehlgeschlagen!\n");
+		}
+		gpioSetMode(27, PI_OUTPUT); 		// Lampe weiss
+		gpioSetMode(23, PI_OUTPUT); 		// Lampe rot
+		gpioSetMode(24, PI_OUTPUT);		// Lampe gruen
+		gpioSetMode(25, PI_OUTPUT);		// Lampe gelb
+		//
+		gpioWrite(25, 1);
+		gpioWrite(27, 1);
+		gpioDelay(2000);
+		gpioWrite(24, 0);
+		WebSocket_initialisierung(argc, argv);
+		// Status fÃ¼r Websocket-Init wird in Funktion implementiert
+		sens_init = Sensor_initialisierung();
+		// Status fÃ¼r Sensor-Init wird in Funktion implementiert
+		if (sens_init != 7) {
+			gpioWrite(23, 1);
+			gpioDelay(2000);
+			gpioWrite(23, 0);
+		}
+
+		gpioWrite(25, 0);
+		gpioWrite(27, 0);
+
+		/*****************/
+		/* Hauptschleife */
+		/*****************/
+		while (cnt >= 0 && !exit_loop) {
+			gpioWrite(24, 1);
+			if (sens_init == 7) {
+				Sensor_routine();
+			}
+
+			cnt = libwebsocket_service(context, 10);// u.a. neue Verbindungen werden akzeptiert ; ggf. setzen des send_notification
+			if (send_notification) {
+				libwebsocket_callback_on_writable_all_protocol(&protocols[0]);
+				send_notification = FALSE;
+			}
+			g_main_context_iteration(NULL, FALSE);
+		}
+
+		/* Abbruchroutine */
+		out: if (context != NULL)
+			libwebsocket_context_destroy(context);
+		if (signal_id > 0)
+			g_source_remove(signal_id);
+		if (option_context != NULL)
+			g_option_context_free(option_context);
+		close(sockfd); 								// Close Sensor-Socket
+	#ifndef HAVE_SYSTEMD
+		closelog();
+	#endif
+
+		return exit_value;
 
 	return 0;
 }
