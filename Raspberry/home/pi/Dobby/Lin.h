@@ -4,6 +4,8 @@ enum FrameType
 	init, activation, message	//0, 1, 2
 };
 
+class Frame;
+
 class Lin
 {
 public:
@@ -22,11 +24,11 @@ public:
 	int linInitialize();
 
 private:
-	int BAUDRATE = 19200;
-	int handle = -1;
-	Frame initFrame;
-	Frame activationFrame;
-	Frame messageFrame;
+	static int BAUDRATE;
+	static int handle;
+	Frame *initFrame;
+	Frame *activationFrame;
+	Frame *messageFrame;
 	void sendInitFrame();
 	void sendWakeUp();
 	void sendActivationFrame();
