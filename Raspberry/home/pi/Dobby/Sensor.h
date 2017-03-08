@@ -12,16 +12,16 @@ public:
 	void initialize();
 	void startRoutine();
 
-	void Sensor::setAusloeser(int value);
-	int Sensor::getAusloeser();
+	void setAusloeser(int value);
+	int getAusloeser();
 
-	void Sensor::setSocketFileDescription(int value);
-	int Sensor::getSocketFileDescription();
+	void setSocketFileDescription(int value);
+	int getSocketFileDescription();
 
-	void Sensor::setSensorRoutine(int value);
-	int Sensor::getSensorRoutine();
+	void setSensorRoutine(int value);
+	int getSensorRoutine();
 
-	void Sensor::closeSensor();
+	void closeSensor();
 
 private:
 	// Private Funktionen

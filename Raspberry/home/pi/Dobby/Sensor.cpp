@@ -6,8 +6,18 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include "string.h"
+#include "string"
+#include "stdio.h"
 #include "pigpio.h"
 #include "Sensor.h"
+
+#define MAX_PAYLOAD 10000		 // Max Datasize der Socket-Verbindungen pro Task
+#define PORT "2112"			 	// Port am Sensors
+#define BACKLOG 20 			 	// Maximale Verbindungen in der Warteschlage
+#define MAXDATASIZE 2000 		 // Max Datasize pro Datenausgabe des Sensors
+
+using namespace std;
 
 //Sensor
 int Sensor::sockfd = 0;				 // Socket-File-Description für Sensor

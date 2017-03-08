@@ -45,15 +45,7 @@
 #include "Frame.h"
 #include "Global.h"
 
-
-// #define _GNU_SOURCE
-#define MAX_PAYLOAD 10000		 // Max Datasize der Socket-Verbindungen pro Task
-#define PORT "2112"			 // Port am Sensors
-#define BACKLOG 20 			 // Maximale Verbindungen in der Warteschlage
-#define MAXDATASIZE 2000 		 // Max Datasize pro Datenausgabe des Sensors
-
 using namespace std;
-
 
 /* ***************************************** */
 /* ***************************************** */
