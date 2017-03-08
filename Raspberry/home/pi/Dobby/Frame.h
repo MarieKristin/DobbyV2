@@ -3,12 +3,13 @@ class Frame
 {
 public:
 	Frame();
-	Frame(int _id);
 	~Frame();
 
 	void setContent(int data0, int data1, int data2, int data3, int data4,
 		int data5, int data6, int data7, int data8);
-	void getContent();
+	int* getFrame();
+	void setID(int _id);
+	int getSize();
 
 private:
 	int id;

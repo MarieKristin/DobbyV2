@@ -6,12 +6,6 @@ Frame::Frame()
 
 }
 
-Frame::Frame(int _id)
-{
-	printf("Konstrutkor Frame\n");
-	id = _id;
-}
-
 Frame::~Frame()
 {
 }
@@ -42,9 +36,14 @@ int Frame::getChecksum() {
 	return ~summe & 0xFF;
 }
 
-void Frame::getContent() {
-	for (size_t i = 0; i < 10; i++)
-	{
-		printf("Wert: %d\n", content[i]);
-	}
+int* Frame::getFrame() {
+	return content;
+}
+
+void Frame::setID(int _id) {
+	id = _id;
+}
+
+int Frame::getSize() {
+	return sizeof(content);
 }
