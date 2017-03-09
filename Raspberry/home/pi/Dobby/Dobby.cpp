@@ -49,30 +49,6 @@ using namespace std;
 
 /* ***************************************** */
 /* ***************************************** */
-/* Allgemeine Funktionen					 */
-/* ***************************************** */
-/* ***************************************** */
-
-/* ***************************************** */
-/* Blinkfunktion zum Testen 		     */
-/* ***************************************** */
-unsigned int blinken(int lampe, int geschwindigkeit) {
-	int i = 0;
-	while (i != 15) {
-		gpioWrite(lampe, 1);
-		gpioDelay(geschwindigkeit); // Warte 100 ms
-		gpioWrite(lampe, 0);
-		gpioDelay(geschwindigkeit); // Warte 100 ms
-		i++;
-	}
-	return 1;
-}
-
-
-
-
-/* ***************************************** */
-/* ***************************************** */
 /* main function 			     */
 /* ***************************************** */
 /* ***************************************** */
@@ -84,38 +60,39 @@ int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argum
 		/*************************/
 
 		// Bibliothek um GPIOs anzusprechen
-		if (lin->linInitialize() < 0) {
-			printf("Initialisierung fehlgeschlagen!\n");
+		if (ioControl->initialize() < 0) {
+			printf("[FAIL] PIGPIO Initialisierung fehlgeschlagen!\n");
 		}
-		gpioSetMode(27, PI_OUTPUT); 		// Lampe weiss
-		gpioSetMode(23, PI_OUTPUT); 		// Lampe rot
-		gpioSetMode(24, PI_OUTPUT);		// Lampe gruen
-		gpioSetMode(25, PI_OUTPUT);		// Lampe gelb
-		//
-		gpioWrite(25, 1);
-		gpioWrite(27, 1);
-		gpioDelay(2000);
-		gpioWrite(24, 0);
+
+		ioControl->setToOutput(27);		// Lampe weiss
+		ioControl->setToOutput(23);		// Lampe rot
+		ioControl->setToOutput(24);		// Lampe gruen
+		ioControl->setToOutput(25);		// Lampe gelb
+
+		ioControl->writePin(25, 1);
+		ioControl->writePin(27, 1);
+		ioControl->setDelay(2000);
+		ioControl->writePin(24, 0);
+
 		WebSocket_initialisierung(argc, argv);
 		// Status für Websocket-Init wird in Funktion implementiert
-
 
 		sensor->initialize();
 		// Status für Sensor-Init wird in Funktion implementiert
 		if (sensor->getSensorRoutine() != 7) {
-			gpioWrite(23, 1);
-			gpioDelay(2000);
-			gpioWrite(23, 0);
+			ioControl->writePin(23, 1);
+			ioControl->setDelay(2000);
+			ioControl->writePin(23, 0);
 		}
 
-		gpioWrite(25, 0);
-		gpioWrite(27, 0);
+		ioControl->writePin(25, 0);
+		ioControl->writePin(27, 0);
 
 		/*****************/
 		/* Hauptschleife */
 		/*****************/
 		while (cnt >= 0 && !exit_loop) {
-			gpioWrite(24, 1);
+			ioControl->writePin(24, 1);
 			if (sensor->getSensorRoutine() == 7) {
 				sensor->startRoutine();
 			}

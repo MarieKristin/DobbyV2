@@ -21,8 +21,6 @@ public:
 	void getFrame();
 	void startMotors(int directionLeft, int velocityLeft, int directionRight, int velocityRight);
 	void stopMotors();
-	void initializeSend();
-	int linInitialize();
 
 private:
 	IOControl *ioControl;
