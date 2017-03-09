@@ -180,7 +180,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		if (sensor->getAusloeser() == 0) {
 			ausgefuehrt = blinken(24, 50);
 		} else {
-			Sensor_routine();
+			sensor->startRoutine();
 		}
 	}
 	ausgefuehrt = 0;
@@ -191,7 +191,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		if (sensor->getAusloeser() == 0) {
 			ausgefuehrt = blinken(23, 50);
 		} else {
-			Sensor_routine();
+			sensor->startRoutine();
 		}
 	}
 	ausgefuehrt = 0;
@@ -202,7 +202,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		if (sensor->getAusloeser() == 0) {
 			ausgefuehrt = blinken(25, 50);
 		} else {
-			Sensor_routine();
+			sensor->startRoutine();
 		}
 	}
 	ausgefuehrt = 0;
@@ -213,7 +213,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		if (sensor->getAusloeser() == 0) {
 			ausgefuehrt = blinken(27, 50);
 		} else {
-			Sensor_routine();
+			sensor->startRoutine();
 		}
 	}
 	ausgefuehrt = 0;
@@ -239,7 +239,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	if (test == 0) {
 		gpioWrite(23, 1);
 
-		sensor->close();
+		sensor->closeSensor();
 
 		gpioDelay(2000);
 		gpioWrite(23, 0);
