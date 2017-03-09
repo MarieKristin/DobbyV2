@@ -4,6 +4,7 @@ enum FrameType
 	init, activation, message	//0, 1, 2
 };
 
+class IOControl;
 class Frame;
 
 class Lin
@@ -24,6 +25,7 @@ public:
 	int linInitialize();
 
 private:
+	IOControl *ioControl;
 	static int BAUDRATE;
 	static int handle;
 	Frame *initFrame;

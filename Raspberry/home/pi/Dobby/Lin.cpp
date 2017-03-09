@@ -10,6 +10,10 @@
 int Lin::BAUDRATE = 19200;
 int Lin::handle = -1;
 
+Lin::Lin(IOControl *p_ioControl){
+	ioControl = p_ioControl;
+}
+
 Lin::Lin()
 {
 	if (gpioInitialise() < 0)
@@ -88,7 +92,7 @@ int Lin::linInitialize() {
 void Lin::setInitialContents() {
 	initFrame->setID(init);
 	messageFrame->setID(message);
-	messageFrame->setID(activation);
+	activationFrame->setID(activation);
 
 	initFrame->setContent(0x3C, 0xA0, 0x02, 0x10, 0x84, 0xFF, 0xFF, 0xFF, 0xFF); //Checksum 0xC8
 	activationFrame->setContent(0x3C, 0xAA, 0x9F, 0x0E, 0x0D, 0x01, 0xFF, 0xFF, 0xFF); //Checksum 0x99

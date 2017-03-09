@@ -2,11 +2,13 @@
 /* Globale Variablen 			     */
 /* ***************************************** */
 
-//Motoren
+IOControl *ioControl = new IOControl();
 
-Lin *lin = new Lin();
+Lin *lin = new Lin(ioControl);
 
-Sensor *sensor = new Sensor();
+Sensor *sensor = new Sensor(ioControl);
+
+WebSocket *webSocket = new WebSocket(ioControl);
 
 //WebSocketServer
 static struct libwebsocket_context *context;
