@@ -85,38 +85,38 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	string lampe = "WebCamera";
 	int test = s_data.compare(lampe); // Vergleiche ob das eigegebene Wort dem Wert von "lampe" entspricht
 	if (test == 0) {
-		blinken(27, 100);
+		ioControl->blinken(27, 100);
 	}
 	test = 7; 										 // == 0 ? -> ist gleich
 	string weiss = "TestW";
 	test = s_data.compare(weiss);
 	if (test == 0) {
-		blinken(27, 200);
+		ioControl->blinken(27, 200);
 	}
 	test = 7;
 	string rot = "TestR";
 	test = s_data.compare(rot);
 	if (test == 0) {
-		blinken(23, 200);
+		ioControl->blinken(23, 200);
 	}
 	test = 7;
 	string gelb = "TestGe";
 	test = s_data.compare(gelb);
 	if (test == 0) {
-		blinken(25, 200);
+		ioControl->blinken(25, 200);
 	}
 	test = 7;
 	string gruen = "TestGr";
 	test = s_data.compare(gruen);
 	if (test == 0) {
-		blinken(24, 200);
+		ioControl->blinken(24, 200);
 	}
 	test = 7;
 	string start = "Start";
 	test = s_data.compare(start);
 	while (test == 0 && ausgefuehrt != 1) {
 		if (sensor->getAusloeser() == 0) {
-			ausgefuehrt = blinken(24, 50);
+			ausgefuehrt = ioControl->blinken(24, 50);
 		} else {
 			sensor->startRoutine();
 		}
@@ -127,7 +127,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	test = s_data.compare(stop);
 	while (test == 0 && ausgefuehrt != 1) {
 		if (sensor->getAusloeser() == 0) {
-			ausgefuehrt = blinken(23, 50);
+			ausgefuehrt = ioControl->blinken(23, 50);
 		} else {
 			sensor->startRoutine();
 		}
@@ -138,7 +138,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	test = s_data.compare(left);
 	while (ausgefuehrt != 1 && test == 0) {
 		if (sensor->getAusloeser() == 0) {
-			ausgefuehrt = blinken(25, 50);
+			ausgefuehrt = ioControl->blinken(25, 50);
 		} else {
 			sensor->startRoutine();
 		}
@@ -149,7 +149,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	test = s_data.compare(right);
 	while (ausgefuehrt != 1 && test == 0) {
 		if (sensor->getAusloeser() == 0) {
-			ausgefuehrt = blinken(27, 50);
+			ausgefuehrt = ioControl->blinken(27, 50);
 		} else {
 			sensor->startRoutine();
 		}
@@ -159,50 +159,50 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	string sensInit = "SensInit";
 	test = s_data.compare(sensInit);
 	if (test == 0) {
-		gpioWrite(24, 0);
-		gpioWrite(27, 1);
-		gpioWrite(25, 1);
+		ioControl->writePin(24, 0);
+		ioControl->writePin(27, 1);
+		ioControl->writePin(25, 1);
 		sensor->initialize();
 		if (sensor->getSensorRoutine() != 7) {
-			gpioWrite(23, 1);
-			gpioDelay(2000);
-			gpioWrite(23, 0);
+			ioControl->writePin(23, 1);
+			ioControl->setDelay(2000);
+			ioControl->writePin(23, 0);
 		}
-		gpioWrite(25, 0);
-		gpioWrite(27, 0);
+		ioControl->writePin(25, 0);
+		ioControl->writePin(27, 0);
 	}
 	test = 7;
 	string sensOut = "SensOff";
 	test = s_data.compare(sensOut);
 	if (test == 0) {
-		gpioWrite(23, 1);
+		ioControl->writePin(23, 1);
 
 		sensor->closeSensor();
 
-		gpioDelay(2000);
-		gpioWrite(23, 0);
+		ioControl->setDelay(2000);
+		ioControl->writePin(23, 0);
 	}
 	string motorOn = "MotorOn";
 	test = s_data.compare(motorOn);
 	if (test == 0) {
-		gpioWrite(23, 1);
-		gpioWrite(25, 1);
+		ioControl->writePin(23, 1);
+		ioControl->writePin(25, 1);
 
 		lin->startMotors(0x55, 0x30, 0x55, 0x30);
 
-		gpioWrite(25, 0);
-		gpioWrite(23, 0);
+		ioControl->writePin(25, 0);
+		ioControl->writePin(23, 0);
 	}
 	string motorOff = "MotorOff";
 	test = s_data.compare(motorOff);
 	if (test == 0) {
-		gpioWrite(23, 1);
-		gpioWrite(25, 1);
+		ioControl->writePin(23, 1);
+		ioControl->writePin(25, 1);
 
 		lin->stopMotors();
 
-		gpioWrite(25, 0);
-		gpioWrite(23, 0);
+		ioControl->writePin(25, 0);
+		ioControl->writePin(23, 0);
 	}
 
 	// Test Ende
@@ -343,15 +343,12 @@ int WebSocket_initialisierung(int argc, char **argv) {
 	if (context == NULL) {
 		print_log(LOG_ERR, "(main) libwebsocket context init failed\n");
 		return -1;
-		gpioWrite(23, 1);
-		gpioDelay(2000);
-		gpioWrite(23, 0);
 	}
 	print_log(LOG_INFO, "(main) context - %p\n", context);
 
-	gpioWrite(24, 1);
-	gpioDelay(2000);
-	gpioWrite(24, 0);
+	ioControl->writePin(24, 1);
+	ioControl->setDelay(2000);
+	ioControl->writePin(24, 0);
 }
 
 WebSocket::WebSocket(IOControl *p_ioControl){

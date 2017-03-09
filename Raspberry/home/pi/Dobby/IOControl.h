@@ -14,7 +14,6 @@ private:
 	// Private Funktionen
 	int BAUDRATE;
 	int serialHandle;
-	int init;
 	int initialize();
 	void setToOutput(int pin);
 	void setToAlternative(int pin);

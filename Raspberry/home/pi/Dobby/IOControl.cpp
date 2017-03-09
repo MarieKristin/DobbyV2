@@ -14,14 +14,6 @@ IOControl::~IOControl(){
 
 }
 
-void IOControl::setInit(int n_init){
-	init = n_init,
-}
-
-int getInit(){
-	return init;
-}
-
 int IOControl::initialize(){
 	return gpioInitialise();
 }
@@ -60,11 +52,11 @@ void IOControl::closeSerial(){
 	cout << "[OK] UART Closed\n";
 }
 
-void setHandle(int value){
+void IOControl::setHandle(int value){
 	serialHandle = value;
 }
 
-int getHandle(){
+int IOControl::getHandle(){
 	return serialHandle;
 }
 
