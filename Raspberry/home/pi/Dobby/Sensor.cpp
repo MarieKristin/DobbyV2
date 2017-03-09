@@ -112,10 +112,9 @@ void Sensor::initialize() {
 		printf("client: connecting to %s\n", s);
 	}
 	freeaddrinfo(servinfo);
-
-	gpioWrite(24, 1);
-	gpioDelay(2000);
-	gpioWrite(24, 0);
+	ioControl->writePin(24, 1);
+	ioControl->setDelay(2000);
+	ioControl->writePin(24, 0);
 	setSensorRoutine(7);
 
 }
@@ -134,7 +133,7 @@ void Sensor::startRoutine() {
 		printf("Senden fehlgeschlagen\n");
 	}
 
-	gpioInitialise();
+	ioControl->initialize();
 
 	numbytes = recv(sockfd, buf, MAXDATASIZE - 1, 0);	// Empfang der Messwerte
 	buf[numbytes] = '\0';					// Abschluss des Messwert-Strings
@@ -242,29 +241,26 @@ void Sensor::startRoutine() {
 			if (entfernung < 400) {
 				if (entfernung < 180) {
 					ausloeser = k;
-					gpioWrite(27, 1);
+					ioControl->writePin(27, 1);
 					printf("STOP\n");
 				} else {
 					printf("ACHTUNG\n");
 					if (k == ausloeser) {
-						gpioWrite(27, 0);
+						ioControl->writePin(27, 0);
 						ausloeser = 0;
 					}
 				}
 			} else {
 				printf("alles ok\n");
 				if (k == ausloeser) {
-					gpioWrite(27, 0);
+					ioControl->writePin(27, 0);
 					ausloeser = 0;
 				}
 			}
 		}
-
 		i++;
 		l = 0;
 	}
-
 	printf("Ende-Sensor\n");
-
 }
 
