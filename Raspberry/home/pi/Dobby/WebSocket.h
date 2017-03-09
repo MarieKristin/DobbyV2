@@ -10,7 +10,9 @@ public:
 	~WebSocket();
 
 	// Public Funktionen
-	int WebSocket_initialisierung(int argc, char **argv);
+	int initialize(int argc, char **argv);
+	gint libWsService();
+	void libWsCallback();
 private:
 	IOControl *ioControl;
 	static void print_log(gint msg_priority, const gchar *msg, ...);

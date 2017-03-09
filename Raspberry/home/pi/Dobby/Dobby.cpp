@@ -61,7 +61,7 @@ int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argum
 
 		// Bibliothek um GPIOs anzusprechen
 		if (ioControl->initialize() < 0) {
-			printf("[FAIL] PIGPIO Initialisierung fehlgeschlagen!\n");
+			cout << "[FAIL] PIGPIO Initialisierung fehlgeschlagen!\n";
 		}
 
 		ioControl->setToOutput(27);		// Lampe weiss
@@ -74,7 +74,7 @@ int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argum
 		ioControl->setDelay(2000);
 		ioControl->writePin(24, 0);
 
-		WebSocket_initialisierung(argc, argv);
+		webSocket->initialize(argc, argv);
 		// Status für Websocket-Init wird in Funktion implementiert
 
 		sensor->initialize();
@@ -97,21 +97,10 @@ int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argum
 				sensor->startRoutine();
 			}
 
-			cnt = libwebsocket_service(context, 10);// u.a. neue Verbindungen werden akzeptiert ; ggf. setzen des send_notification
-			if (send_notification) {
-				libwebsocket_callback_on_writable_all_protocol(&protocols[0]);
-				send_notification = FALSE;
-			}
-			g_main_context_iteration(NULL, FALSE);
+			cnt = webSocket->acceptNew();
 		}
-
 		/* Abbruchroutine */
-		out: if (context != NULL)
-			libwebsocket_context_destroy(context);
-		if (signal_id > 0)
-			g_source_remove(signal_id);
-		if (option_context != NULL)
-			g_option_context_free(option_context);
+		webSocket->closeRoutine();
 
 		sensor->closeSensor();			// Close Sensor-Socket
 
@@ -119,8 +108,6 @@ int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argum
 		closelog();
 	#endif
 
-		return exit_value;
-
-	return 0;
+	return exit_value;
 }
 

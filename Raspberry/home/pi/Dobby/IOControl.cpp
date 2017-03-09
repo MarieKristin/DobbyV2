@@ -34,6 +34,10 @@ void IOControl::writePin(int pin, int value){
 	gpioWrite(pin, value);
 }
 
+void IOControl::writeByte(int value){
+	serWriteByte(getHandle(), value);
+}
+
 void IOControl::setDelay(int duration){
 	gpioDelay(duration);
 }

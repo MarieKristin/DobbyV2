@@ -6,8 +6,6 @@ class IOControl
 public:
 	IOControl();
 	~IOControl();
-	void setInit(int value);
-	int getInit();
 	// Public Funktionen
 
 private:
@@ -21,7 +19,10 @@ private:
 	void writePin(int pin, int value);
 	void setDelay(int duration);
 	void setSleep(int duration);
-	void writeByte(int handle, int value);
+	void writeByte(int value);
 	void closeSerial();
 	void openSerial();
+	unsigned int blinken(int lampe, int geschwindigkeit);
+	void setHandle(int value);
+	int getHandle();
 };

@@ -41,7 +41,7 @@ struct per_session_data {
 /* ***************************************** */
 /* Log-Dateien schreiben 		     */
 /* ***************************************** */
-static void print_log(gint msg_priority, const gchar *msg, ...) {
+static void WebSocket::print_log(gint msg_priority, const gchar *msg, ...) {
 	va_list arg;											// Argumentanzeiger
 	va_start(arg, msg); // Initialisierung mit dem ersten optionalen Argument (Pointer, msg)
 	GString *log = g_string_new(NULL); 		// Initialisierung variabeler String
@@ -63,7 +63,7 @@ static void print_log(gint msg_priority, const gchar *msg, ...) {
 /* ***************************************** */
 /* Interrupt durch Tastatur ausgelöst 	     */
 /* ***************************************** */
-static gboolean sigint_handler() {
+static gboolean WebSocket::sigint_handler() {
 	libwebsocket_cancel_service(context); 					// Beende Service
 	exit_loop = TRUE; 									// Beende While-Schleife
 	return TRUE;
@@ -72,7 +72,7 @@ static gboolean sigint_handler() {
 /* ***************************************** */
 /* Antwortnachricht vorbereiten */
 /* ***************************************** */
-unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
+unsigned int WebSocket::prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		unsigned char *buffer) {
 	string s_data = reinterpret_cast<char*>(data);
 	json_t *reply_obj;
@@ -219,7 +219,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 /* 	*****************************************	*/
 /* 	callback-Funktionen							*/
 /* 	*****************************************	*/
-static int my_callback(struct libwebsocket_context *context,
+static int WebSocket::my_callback(struct libwebsocket_context *context,
 		struct libwebsocket *wsi, enum libwebsocket_callback_reasons reason,
 		void *user, void *in, size_t len) {
 
@@ -290,7 +290,7 @@ static struct libwebsocket_protocols protocols[] = { { "my_protocol", // Protoko
 /* ***************************************** */
 /* Initialisierung WebSocket 		     */
 /* ***************************************** */
-int WebSocket_initialisierung(int argc, char **argv) {
+int WebSocket::initialize(int argc, char **argv) {
 
 	GError *error = NULL;
 	gint signal_id = 0;
@@ -349,6 +349,25 @@ int WebSocket_initialisierung(int argc, char **argv) {
 	ioControl->writePin(24, 1);
 	ioControl->setDelay(2000);
 	ioControl->writePin(24, 0);
+}
+
+void WebSocket::closeRoutine(){
+	out: 	if (context != NULL)
+				libwebsocket_context_destroy(context);
+			if (signal_id > 0)
+				g_source_remove(signal_id);
+			if (option_context != NULL)
+				g_option_context_free(option_context);
+}
+
+gint WebSocket::acceptNew(){
+ 	 	 	gint temp = libwebsocket_service(context, 10);// u.a. neue Verbindungen werden akzeptiert ; ggf. setzen des send_notification
+			if (send_notification) {
+				libwebsocket_callback_on_writable_all_protocol(&protocols[0]);
+				send_notification = FALSE;
+			}
+			g_main_context_iteration(NULL, FALSE);
+			return temp;
 }
 
 WebSocket::WebSocket(IOControl *p_ioControl){
