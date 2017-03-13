@@ -7,6 +7,7 @@ var VirtualJoystick	= function(opts)
 	this._baseEl		= opts.baseElement	|| this._buildJoystickBase();
 	this._mouseSupport	= opts.mouseSupport !== undefined ? opts.mouseSupport : false;
 	this._stationaryBase	= opts.stationaryBase || false;
+	this._direction = opts.direction !== undefined ? opts.direction : false;
 	this._baseX		= this._stickX = opts.baseX || 0
 	this._baseY		= this._stickY = opts.baseY || 0
 	this._limitStickTravel	= opts.limitStickTravel || false
@@ -108,12 +109,14 @@ VirtualJoystick.touchScreenAvailable	= function()
 VirtualJoystick.prototype.deltaX	= function(){ return this._stickX - this._baseX;	}
 VirtualJoystick.prototype.deltaY	= function(){ return this._stickY - this._baseY;	}
 
+/*
 VirtualJoystick.prototype.up	= function(){
 	if( this._pressed === false )	return false;
 	var deltaX	= this.deltaX();
 	var deltaY	= this.deltaY();
 	if( deltaY >= 0 )				return false;
-	if( Math.abs(deltaX) > 2*Math.abs(deltaY) )	return false;
+	//if( Math.abs(deltaX) > 2*Math.abs(deltaY) )	return false;
+	if ( Math.abs(deltaX) > ( Math.tan(Math.unit(67.5, 'deg'))*Math.abs(deltaY) )) return false;
 	return true;
 }
 VirtualJoystick.prototype.down	= function(){
@@ -121,7 +124,8 @@ VirtualJoystick.prototype.down	= function(){
 	var deltaX	= this.deltaX();
 	var deltaY	= this.deltaY();
 	if( deltaY <= 0 )				return false;
-	if( Math.abs(deltaX) > 2*Math.abs(deltaY) )	return false;
+	//if( Math.abs(deltaX) > 2*Math.abs(deltaY) )	return false;
+	if ( Math.abs(deltaX) > ( Math.tan(Math.unit(67.5, 'deg'))*Math.abs(deltaY) ) ) return false;
 	return true;
 }
 VirtualJoystick.prototype.right	= function(){
@@ -129,7 +133,8 @@ VirtualJoystick.prototype.right	= function(){
 	var deltaX	= this.deltaX();
 	var deltaY	= this.deltaY();
 	if( deltaX <= 0 )				return false;
-	if( Math.abs(deltaY) > 2*Math.abs(deltaX) )	return false;
+	//if( Math.abs(deltaY) > 2*Math.abs(deltaX) )	return false;
+	if ( Math.abs(deltaY) > ( Math.tan(Math.unit(67.5, 'deg'))*Math.abs(deltaX) ) ) return false;
 	return true;
 }
 VirtualJoystick.prototype.left	= function(){
@@ -137,9 +142,73 @@ VirtualJoystick.prototype.left	= function(){
 	var deltaX	= this.deltaX();
 	var deltaY	= this.deltaY();
 	if( deltaX >= 0 )				return false;
-	if( Math.abs(deltaY) > 2*Math.abs(deltaX) )	return false;
+	//if( Math.abs(deltaY) > 2*Math.abs(deltaX) )	return false;
+	if ( Math.abs(deltaY) > ( Math.tan(Math.unit(67.5, 'deg'))*Math.abs(deltaX) ) ) return false;
 	return true;
 }
+*/
+
+VirtualJoystick.prototype.up	= function(deltaX, deltaY){
+	if( deltaY >= 0 ) return false;
+	if ( Math.abs(deltaX) > ( Math.tan(67.5)*Math.abs(deltaY) )) return false;
+	return true;
+}
+VirtualJoystick.prototype.down	= function(deltaX, deltaY){
+	if( deltaY <= 0 )				return false;
+	if ( Math.abs(deltaX) > ( Math.tan(67.5)*Math.abs(deltaY) ) ) return false;
+	return true;
+}
+VirtualJoystick.prototype.right	= function(deltaX, deltaY){
+	if( deltaX <= 0 )				return false;
+	if ( Math.abs(deltaY) > ( Math.tan(67.5)*Math.abs(deltaX) ) ) return false;
+	return true;
+}
+VirtualJoystick.prototype.left	= function(deltaX, deltaY){
+	if( deltaX >= 0 )				return false;
+	if ( Math.abs(deltaY) > ( Math.tan(67.5)*Math.abs(deltaX) ) ) return false;
+	return true;
+}
+
+/*VirtualJoystick.prototype.u = function() {
+  if ( this.up() && !this.left() && !this.right() ) return true;
+  return false;
+}
+
+VirtualJoystick.prototype.ur = function() {
+  if ( this.up() && this.right() ) return true;
+  return false;
+}
+
+VirtualJoystick.prototype.r = function() {
+  if ( this.right() && !this.up() && !this.down() ) return true;
+  return false;
+}
+
+VirtualJoystick.prototype.dr = function() {
+  if ( this.down() && this.right() ) return true;
+  return false;
+}
+
+VirtualJoystick.prototype.d = function() {
+  if ( this.down() && !this.left() && !this.right() ) return true;
+  return false;
+}
+
+VirtualJoystick.prototype.dl = function() {
+  if ( this.down() && this.left() ) return true;
+  return false;
+}
+
+VirtualJoystick.prototype.l = function() {
+  if ( this.left() && !this.up() && !this.down() ) return true;
+  return false;
+}
+
+VirtualJoystick.prototype.ul = function() {
+  if ( this.up() && this.left() ) return true;
+  return false;
+}
+*/
 
 //////////////////////////////////////////////////////////////////////////////////
 //										//
@@ -206,11 +275,49 @@ VirtualJoystick.prototype._onMove	= function(x, y)
 				this._stickY = stickNormalizedY * this._stickRadius + this._baseY;
 			}
 		}
-
-        	this._move(this._stickEl.style, (this._stickX - this._stickEl.width /2), (this._stickY - this._stickEl.height/2));
+    this._calculateDirection();
+    this._move(this._stickEl.style, (this._stickX - this._stickEl.width /2), (this._stickY - this._stickEl.height/2));
 	}
 }
 
+VirtualJoystick.prototype._calculateDirection = function() {
+  var dir = 'default';
+
+  if( this._pressed === false )	return false;
+  var deltaX	= this.deltaX();
+  var deltaY	= this.deltaY();
+
+  if ( this.up(deltaX, deltaY) ) {            //so the stick is somewhere in the upper part
+    if ( this.left(deltaX, deltaY) ) {        //so the stick is "up left"
+      dir = 'up-left';
+    } else if ( this.right(deltaX, deltaY) ) {//so the stick is "up right"
+      dir = 'up-right';
+    } else {                                  //so the stick is "up"
+      dir = 'up';
+    }
+  } else if ( this.down(deltaX, deltaY) ) {   //so the stick is somewhere in the lower part
+    if ( this.left(deltaX, deltaY) ) {        //so the stick is "down left"
+        dir = 'down-left';
+      } else if ( this.right(deltaX, deltaY) ) {//so the stick is "down right"
+        dir = 'down-right';
+      } else {                                  //so the stick is "down"
+      dir = 'down';
+    }
+  } else if ( this.left(deltaX, deltaY) ) {   //so the stick is "left"
+    dir = 'left';
+  } else if ( this.right(deltaX, deltaY) ) {  //so the stick is "right"
+    dir = 'right';
+  }                                           //if nothing is fitting for the direction, this means
+                                              //either something went horribly wrong
+                                              //or the stick is in default position
+
+  if (this._direction != false) {
+    this._direction.innerHTML = "Direction: " + dir;
+  }
+
+  return dir;
+  //(<HTMLElement>document.getElementById('debug1')).innerHTML = "Direction: " + dir;
+}
 
 //////////////////////////////////////////////////////////////////////////////////
 //		bind touch events (and mouse events for debug)			//
@@ -233,6 +340,7 @@ VirtualJoystick.prototype._onMouseMove	= function(event)
 {
 	var x	= event.clientX;
 	var y	= event.clientY;
+	//this.calculateDirection();
 	return this._onMove(x, y);
 }
 
@@ -364,13 +472,17 @@ VirtualJoystick.prototype._move = function(style, x, y)
 	if (this._transform) {
 		if (this._has3d) {
 			style[this._transform] = 'translate3d(' + x + 'px,' + y + 'px, 0)';
+			//this._calculateDirection();
 		} else {
 			style[this._transform] = 'translate(' + x + 'px,' + y + 'px)';
+			//this._calculateDirection();
 		}
 	} else {
 		style.left = x + 'px';
 		style.top = y + 'px';
+		//this._calculateDirection();
 	}
+	//this._calculateDirection();
 }
 
 VirtualJoystick.prototype._getTransformProperty = function()

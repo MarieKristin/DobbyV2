@@ -19,8 +19,30 @@ export class ConnectComponent {
   private arrMan: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('manual');
   private helpEl: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('btn-prim');
   private loader: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('loader');
+  private direction: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('direction');
 
   private joystick;
+
+  //start of debugging
+  public init() {
+    this.helpEl[0].style.display = "none";
+
+    this.joystick = new VirtualJoystick({
+      mouseSupport: true,
+      stationaryBase: true,
+      direction: this.direction[0],
+      baseX: 200,
+      baseY: 400,
+      limitStickTravel: true,
+      stickRadius: 50
+    });
+
+    var laufI;
+    for (laufI=0; laufI< this.arrMan.length; laufI++) {
+      this.arrMan[laufI].style.display = "block";
+    }
+  }
+  //end of debugging
 
   // TODO: In einen Angular 2 Service schieben
   constructor() {  }
@@ -73,7 +95,7 @@ export class ConnectComponent {
       mouseSupport: true,
       stationaryBase: true,
       baseX: 200,
-      baseY: 200,
+      baseY: 400,
       limitStickTravel: true,
       stickRadius: 50
     });
@@ -96,6 +118,12 @@ export class ConnectComponent {
     for (i=0; i< this.arrMan.length; i++) {
       this.arrMan[i].style.display = "block";
     }
+
+    //this.joystick._container.addEventListener( 'mousemove'	, this.calculateDirection	, false );
+    //this.joystick.addEventListener('moved', this.calculateDirection(), false);
+    //while(1) {
+    //  (<HTMLElement>document.getElementById('debug1')).innerHTML = "Direction: " + this.joystick.calculateDirection();
+    //}
   }
 
   public back() {

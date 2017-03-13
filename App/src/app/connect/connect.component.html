@@ -1,5 +1,6 @@
 <!--<button type="button" class="btn btn-prim btn-primary" (click)="connect()">Connect</button>-->
-<button type="button" class="btn btn-prim" (click)="connect()">Connect</button>
+<!--<button type="button" class="btn btn-prim" (click)="connect()">Connect</button>-->
+<button type="button" class="btn btn-prim" (click)="init()">Debug Init</button>
 
 <p class="hidden" style="">W&auml;hlen Sie den Fahr-Modus:</p>
 <!--<input type="text" class="hidden" placeholder="Kommando" [(ngModel)]="command">-->
@@ -23,12 +24,12 @@
 
 <!--<img class="img_joystick hidden" width="350dp" height="350dp" src="../../assets/image_button_bg.png" />-->
 
-<div id="debug1" class="manual" style="position:fixed; left:5%; top:4%; color:grey;">
+<div id="debug1" class="manual direction" style="position:fixed; left:5%; top:30%; color:grey;">
+  Direction
+</div>
+
+<div id="debug2" class="manual" style="position:fixed; left:5%; top:34%; color:grey;">
   Debug Info
 </div>
 
-<div id="debug2" class="manual" style="position:fixed; left:5%; top:8%; color:grey;">
-  Debug Info
-</div>
-
-<button type="button" class="btn manual" (click)="back()">Zur&uuml;ck</button>
+<!--<button type="button" class="btn manual" (click)="back()">Zur&uuml;ck</button>-->
