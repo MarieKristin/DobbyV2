@@ -43,9 +43,14 @@
 #include <pigpio.h>
 #include "Lin.h"
 #include "Frame.h"
+#include "IOControl.h"
 #include "Global.h"
 
 using namespace std;
+
+
+#define MAX_PAYLOAD 10000		 // Max Datasize der Socket-Verbindungen pro Task
+#define BACKLOG 20 			 // Maximale Verbindungen in der Warteschlage
 
 //WebSocketServer
 static struct libwebsocket_context *context;
@@ -317,11 +322,10 @@ static int my_callback(struct libwebsocket_context *context,
 			return 1;
 		}
 
-		psd->len = prepare_reply(wsi, in,
-				&psd->buf[LWS_SEND_BUFFER_PRE_PADDING]);
-		if (psd->len > 0) {
-			libwebsocket_callback_on_writable(context, wsi);
-		}
+		psd->len = prepare_reply(wsi, (unsigned char*) in, &psd->buf[LWS_SEND_BUFFER_PRE_PADDING]);
+				if (psd->len > 0) {
+					libwebsocket_callback_on_writable(context, wsi);
+				}
 		break;
 
 	default:
@@ -467,7 +471,7 @@ int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argum
 		g_source_remove(signal_id);
 	if (option_context != NULL)
 		g_option_context_free(option_context);
-	close (sockfd); 								// Close Sensor-Socket
+	sensor->closeSensor();								// Close Sensor-Socket
 #ifndef HAVE_SYSTEMD
 	closelog();
 #endif
