@@ -5,6 +5,9 @@
 #include <termios.h>
 #include <pigpio.h>
 #include <iostream>
+#include "IOControl.h"
+
+using namespace std;
 
 IOControl::IOControl(){
 	BAUDRATE = 19200;

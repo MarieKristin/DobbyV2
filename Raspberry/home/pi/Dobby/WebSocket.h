@@ -1,20 +1,28 @@
 #pragma once
 
 class IOControl;
+class Lin;
+class Sensor;
 
 class WebSocket
 {
 public:
-	WebSocket(IOControl *p_ioControl);
+	WebSocket(IOControl *p_ioControl, Lin *p_lin, Sensor *p_sensor);
 	WebSocket();
 	~WebSocket();
 
 	// Public Funktionen
 	int initialize(int argc, char **argv);
-	gint libWsService();
-	void libWsCallback();
+	gint acceptNew();
+	gint getExitValue();
+	void closeRoutine();
+
+	//WebSocketServer
+
 private:
 	IOControl *ioControl;
+	Lin *lin;
+	Sensor *sensor;
 	static void print_log(gint msg_priority, const gchar *msg, ...);
 	static gboolean sigint_handler();
 	unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,

@@ -8,8 +8,7 @@ public:
 	~IOControl();
 	// Public Funktionen
 
-private:
-	// Private Funktionen
+
 	int BAUDRATE;
 	int serialHandle;
 	int initialize();

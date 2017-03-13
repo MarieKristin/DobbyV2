@@ -6,6 +6,7 @@
 #include <pigpio.h>
 #include "Frame.h"
 #include "Lin.h"
+#include "IOControl.h"
 
 
 Lin::Lin(IOControl *p_ioControl){
@@ -90,7 +91,7 @@ void Lin::sendSyncByte() {
 
 void Lin::sendWakeUp() {
 	ioControl->closeSerial();
-	ioControl->setToOutput(14)
+	ioControl->setToOutput(14);
 	ioControl->writePin(14, 0);
 	ioControl->setSleep(70);
 	ioControl->writePin(14, 1);
@@ -106,7 +107,7 @@ void Lin::sendBreak() {
 	ioControl->setSleep(680);
 	ioControl->writePin(14, 1);
 	ioControl->setSleep(20);
-	ipControl->setToAlternative(14);
+	ioControl->setToAlternative(14);
 	ioControl->openSerial();
 }
 

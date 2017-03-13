@@ -10,6 +10,7 @@
 #include "string"
 #include "stdio.h"
 #include "Sensor.h"
+#include "IOControl.h"
 
 #define PORT "2112"			 	// Port am Sensors
 #define MAXDATASIZE 2000 		 // Max Datasize pro Datenausgabe des Sensors

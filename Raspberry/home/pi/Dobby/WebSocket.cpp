@@ -7,6 +7,11 @@
 #include <jansson.h>
 #include <libwebsockets.h>
 #include <iostream>
+#include "WebSocket.h"
+#include "Lin.h"
+#include "Sensor.h"
+#include "IOControl.h"
+#include <termios.h>
 
 #define MAX_PAYLOAD 10000		 // Max Datasize der Socket-Verbindungen pro Task
 #define BACKLOG 20 			 	// Maximale Verbindungen in der Warteschlage
@@ -14,6 +19,22 @@
 #ifdef HAVE_SYSTEMD
 #include <systemd/sd-journal.h>
 #endif
+
+using namespace std;
+
+	static struct libwebsocket_context *context;
+	char *notification;
+	gboolean opt_no_daemon = FALSE;
+	gboolean exit_loop = FALSE;
+	gboolean send_notification = FALSE;
+	gint port = 8080;
+	int signal_id = 0;
+	GOptionContext *option_context = NULL;
+	gint exit_value = EXIT_SUCCESS;
+
+	struct termios options;
+
+
 
 /* ***************************************** */
 /* Commandline Optionen des Servers im Linux */
@@ -38,10 +59,11 @@ struct per_session_data {
 	unsigned int index; 												// Index
 };
 
+
 /* ***************************************** */
 /* Log-Dateien schreiben 		     */
 /* ***************************************** */
-static void WebSocket::print_log(gint msg_priority, const gchar *msg, ...) {
+void WebSocket::print_log(gint msg_priority, const gchar *msg, ...) {
 	va_list arg;											// Argumentanzeiger
 	va_start(arg, msg); // Initialisierung mit dem ersten optionalen Argument (Pointer, msg)
 	GString *log = g_string_new(NULL); 		// Initialisierung variabeler String
@@ -63,7 +85,7 @@ static void WebSocket::print_log(gint msg_priority, const gchar *msg, ...) {
 /* ***************************************** */
 /* Interrupt durch Tastatur ausgelöst 	     */
 /* ***************************************** */
-static gboolean WebSocket::sigint_handler() {
+gboolean WebSocket::sigint_handler() {
 	libwebsocket_cancel_service(context); 					// Beende Service
 	exit_loop = TRUE; 									// Beende While-Schleife
 	return TRUE;
@@ -72,7 +94,7 @@ static gboolean WebSocket::sigint_handler() {
 /* ***************************************** */
 /* Antwortnachricht vorbereiten */
 /* ***************************************** */
-unsigned int WebSocket::prepare_reply(struct libwebsocket *wsi, unsigned char *data,
+unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		unsigned char *buffer) {
 	string s_data = reinterpret_cast<char*>(data);
 	json_t *reply_obj;
@@ -219,7 +241,7 @@ unsigned int WebSocket::prepare_reply(struct libwebsocket *wsi, unsigned char *d
 /* 	*****************************************	*/
 /* 	callback-Funktionen							*/
 /* 	*****************************************	*/
-static int WebSocket::my_callback(struct libwebsocket_context *context,
+int WebSocket::my_callback(struct libwebsocket_context *context,
 		struct libwebsocket *wsi, enum libwebsocket_callback_reasons reason,
 		void *user, void *in, size_t len) {
 
@@ -370,8 +392,14 @@ gint WebSocket::acceptNew(){
 			return temp;
 }
 
-WebSocket::WebSocket(IOControl *p_ioControl){
+gint WebSocket::getExitValue(){
+	return exit_value;
+}
+
+WebSocket::WebSocket(IOControl *p_ioControl, Lin *p_lin, Sensor *p_sensor){
 	ioControl = p_ioControl;
+	lin = p_lin;
+	sensor = p_sensor;
 }
 
 WebSocket::WebSocket(){
