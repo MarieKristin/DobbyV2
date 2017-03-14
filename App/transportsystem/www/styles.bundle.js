@@ -1,22 +1,22 @@
-webpackJsonp([1,2],{
+webpackJsonp([2,4],{
 
-/***/ 371:
-/***/ function(module, exports, __webpack_require__) {
+/***/ 389:
+/***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(633);
+var content = __webpack_require__(660);
 if(typeof content === 'string') content = [[module.i, content, '']];
 // add the styles to the DOM
-var update = __webpack_require__(662)(content, {});
+var update = __webpack_require__(689)(content, {});
 if(content.locals) module.exports = content.locals;
 // Hot Module Replacement
 if(false) {
 	// When the styles change, update the <style> tags
 	if(!content.locals) {
-		module.hot.accept("!!./../node_modules/css-loader/index.js!./../node_modules/postcss-loader/index.js!./styles.css", function() {
-			var newContent = require("!!./../node_modules/css-loader/index.js!./../node_modules/postcss-loader/index.js!./styles.css");
+		module.hot.accept("!!../node_modules/css-loader/index.js?{\"sourceMap\":false}!../node_modules/postcss-loader/index.js!./styles.css", function() {
+			var newContent = require("!!../node_modules/css-loader/index.js?{\"sourceMap\":false}!../node_modules/postcss-loader/index.js!./styles.css");
 			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
 			update(newContent);
 		});
@@ -25,25 +25,25 @@ if(false) {
 	module.hot.dispose(function() { update(); });
 }
 
-/***/ },
+/***/ }),
 
-/***/ 633:
-/***/ function(module, exports, __webpack_require__) {
+/***/ 660:
+/***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(634)();
+exports = module.exports = __webpack_require__(661)();
 // imports
 
 
 // module
-exports.push([module.i, "/* You can add global styles to this file, and also import other style files */\n", ""]);
+exports.push([module.i, "/* You can add global styles to this file, and also import other style files */\n.btn {\n  /*display: inline-block;\n  margin: 0 10px 0 0;\n  padding: 15px 45px;\n  font-size: 48px;\n  font-family: \"Bitter\",serif;\n  line-height: 1.8;*/\n  padding: 15px 15px;\n  width: 40%;\n  margin: 5%;\n  -webkit-appearance: none;\n     -moz-appearance: none;\n          appearance: none;\n  box-shadow: none;\n  border-radius: 0;\n  color: #fff;\n  /*text-shadow: -2px 2px #346392;*/\n  /*background-color: #4a7bab;*/\n  background-color: #6496c8;\n  /*background-image: linear-gradient(top, #6496c8, #346392);*/\n  box-shadow: inset 0 0 0 1px #27496d;\n  border: none;\n  border-radius: 15px;\n}\n\n.btn:active {\n  box-shadow: inset 0 0 0 1px #27496d,inset 0 5px 30px #193047;\n  outline: none;\n}\n\n.btn:focus {\n  outline: none;\n}\n\n.hidden {\n  display: none;\n}\n", ""]);
 
 // exports
 
 
-/***/ },
+/***/ }),
 
-/***/ 634:
-/***/ function(module, exports) {
+/***/ 661:
+/***/ (function(module, exports) {
 
 /*
 	MIT License http://www.opensource.org/licenses/mit-license.php
@@ -97,10 +97,10 @@ module.exports = function() {
 };
 
 
-/***/ },
+/***/ }),
 
-/***/ 662:
-/***/ function(module, exports) {
+/***/ 689:
+/***/ (function(module, exports) {
 
 /*
 	MIT License http://www.opensource.org/licenses/mit-license.php
@@ -115,7 +115,7 @@ var stylesInDom = {},
 		};
 	},
 	isOldIE = memoize(function() {
-		return /msie [6-9]\b/.test(window.navigator.userAgent.toLowerCase());
+		return /msie [6-9]\b/.test(self.navigator.userAgent.toLowerCase());
 	}),
 	getHeadElement = memoize(function () {
 		return document.head || document.getElementsByTagName("head")[0];
@@ -350,15 +350,15 @@ function updateLink(linkElement, obj) {
 }
 
 
-/***/ },
+/***/ }),
 
-/***/ 665:
-/***/ function(module, exports, __webpack_require__) {
+/***/ 693:
+/***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(371);
+module.exports = __webpack_require__(389);
 
 
-/***/ }
+/***/ })
 
-},[665]);
-//# sourceMappingURL=styles.map
+},[693]);
+//# sourceMappingURL=styles.bundle.map
