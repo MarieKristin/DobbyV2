@@ -13,7 +13,7 @@ public:
 	/* ***************************************** */
 	/* Initialisierung der Sensor-Verbindung   	 */
 	/* ***************************************** */
-	void initialize();
+	int initialize();
 	void startRoutine();
 
 	void setAusloeser(int value);

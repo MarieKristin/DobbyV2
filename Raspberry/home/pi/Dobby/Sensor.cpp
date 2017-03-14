@@ -71,7 +71,7 @@ void* Sensor::get_in_addr(struct sockaddr *sa) {
 	return &(((struct sockaddr_in6*) sa)->sin6_addr);
 }
 
-void Sensor::initialize() {
+int Sensor::initialize() {
 	const char* hostname = "192.168.111.111";
 	int new_fd;
 	int numbytes = 0;
@@ -88,6 +88,7 @@ void Sensor::initialize() {
 	if ((rv = getaddrinfo(hostname, PORT, &hints, &servinfo)) != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
 		setSensorRoutine(1);
+		return getSensorRoutine();
 	}
 	// loop through all the results and connect to the first we can
 	for (p = servinfo; p != NULL; p = p->ai_next) { 				// Socket
@@ -106,6 +107,7 @@ void Sensor::initialize() {
 	if (p == NULL) {
 		fprintf(stderr, "client: failed to connect\n");
 		setSensorRoutine(2);
+		return getSensorRoutine();
 	}
 	if (NULL
 			!= inet_ntop(p->ai_family,
@@ -117,7 +119,7 @@ void Sensor::initialize() {
 	ioControl->setDelay(2000);
 	ioControl->writePin(24, 0);
 	setSensorRoutine(7);
-
+	return getSensorRoutine();
 }
 
 void Sensor::startRoutine() {
