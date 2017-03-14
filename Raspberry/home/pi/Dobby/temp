@@ -1,4 +1,77 @@
-/* ******************************************/
+Main:
+gint cnt = 0;
+
+	/*************************/
+	/* Initialisierungsphase */
+	/*************************/
+
+	// Bibliothek um GPIOs anzusprechen
+	if (linInitialise() < 0) {
+		printf("Initialisierung fehlgeschlagen!\n");
+	}
+	gpioSetMode(27, PI_OUTPUT); 		// Lampe weiss
+	gpioSetMode(23, PI_OUTPUT); 		// Lampe rot
+	gpioSetMode(24, PI_OUTPUT);		// Lampe gruen
+	gpioSetMode(25, PI_OUTPUT);		// Lampe gelb
+	//
+	gpioWrite(25, 1);
+	gpioWrite(27, 1);
+	gpioDelay(2000);
+	gpioWrite(24, 0);
+	WebSocket_initialisierung(argc, argv);
+	// Status für Websocket-Init wird in Funktion implementiert
+	sens_init = Sensor_initialisierung();
+	// Status für Sensor-Init wird in Funktion implementiert
+	if (sens_init != 7) {
+		gpioWrite(23, 1);
+		gpioDelay(2000);
+		gpioWrite(23, 0);
+	}
+
+	gpioWrite(25, 0);
+	gpioWrite(27, 0);
+
+	/*****************/
+	/* Hauptschleife */
+	/*****************/
+	while (cnt >= 0 && !exit_loop) {
+		gpioWrite(24, 1);
+		if (sens_init == 7) {
+			Sensor_routine();
+		}
+
+		cnt = libwebsocket_service(context, 10);// u.a. neue Verbindungen werden akzeptiert ; ggf. setzen des send_notification
+		if (send_notification) {
+			libwebsocket_callback_on_writable_all_protocol(&protocols[0]);
+			send_notification = FALSE;
+		}
+		g_main_context_iteration(NULL, FALSE);
+	}
+
+	/* Abbruchroutine */
+	out: if (context != NULL)
+		libwebsocket_context_destroy(context);
+	if (signal_id > 0)
+		g_source_remove(signal_id);
+	if (option_context != NULL)
+		g_option_context_free(option_context);
+	close(sockfd); 								// Close Sensor-Socket
+#ifndef HAVE_SYSTEMD
+	closelog();
+#endif
+
+	return exit_value;
+	
+	
+	
+	
+	
+	
+	
+	
+	LIN.CPP
+	
+	/* ******************************************/
 /* ******************************************/
 /* Motor-Funktionen 			     		*/
 /* ******************************************/
@@ -12,32 +85,25 @@
 #include <pigpio.h>
 #include <lin.h>
 
-int BAUDRATE = 19200;
-int handle = -1;
-
-/**
- *
- */
-enum {
-	message = 1, activation = 2, init = 3
+	Lin::Lin(){
+		if (gpioInitialise() < 0)
+		{
+			printf("[FAIL] PIGPIO Initialisierung fehlgeschlagen");
+		}
+		else
+		{
+			printf("[OK] PIGPIO Initialisierung ok");
+		}
+	}
+	Lin::~Lin(){
+		gpioTerminate();
+		printf("[OK] PIGPIO beendet");
+	}
 };
-
 /**
  *
  */
-typedef struct {
-	int id;
-	int frameContent[10];
-} linFrame;
-
-linFrame initFrame;
-linFrame messageFrame;
-linFrame activationFrame;
-
-/**
- *
- */
-void initializeSend() {
+void Lin::initializeSend() {
 	handle = serOpen("/dev/ttyAMA0", BAUDRATE, 0);
 
 	if (0 > handle) {
@@ -61,7 +127,7 @@ void initializeSend() {
  * @param data8	DB7
  * @return 1 if the frame was set correctly, otherwise 0
  */
-int setFrame(int id, int data0, int data1, int data2, int data3, int data4,
+int Lin::setFrame(int id, int data0, int data1, int data2, int data3, int data4,
 		int data5, int data6, int data7, int data8) {
 	if (id == message) {
 		messageFrame.frameContent[0] = data0;
@@ -113,7 +179,7 @@ int setFrame(int id, int data0, int data1, int data2, int data3, int data4,
  * @param frame
  * @return
  */
-int getChecksum(int frame[]) {
+int Lin::getChecksum(int frame[]) {
 	int summe = 0;
 	int i;
 
@@ -129,7 +195,7 @@ int getChecksum(int frame[]) {
 /**
  *
  */
-void sendMessageFrame() {
+void Lin::sendMessageFrame() {
 	sendBreak();
 	sendSyncByte();
 	int i;
@@ -141,7 +207,7 @@ void sendMessageFrame() {
 /**
  *
  */
-void sendActivationFrame() {
+void Lin::sendActivationFrame() {
 	sendBreak();
 	sendSyncByte();
 	int i;
@@ -153,7 +219,7 @@ void sendActivationFrame() {
 /**
  *
  */
-void sendInitFrame() {
+void Lin::sendInitFrame() {
 	sendBreak();
 	sendSyncByte();
 	int i;
@@ -165,7 +231,7 @@ void sendInitFrame() {
 /**
  *
  */
-void sendBreak() {
+void Lin::sendBreak() {
 	handle = serClose(handle);
 	printf("[OK] UART Closed\n");
 	gpioSetMode(14, PI_OUTPUT);
@@ -182,7 +248,7 @@ void sendBreak() {
 /**
  *
  */
-void sendWakeUp() {
+void Lin::sendWakeUp() {
 	handle = serClose(handle);
 	gpioSetMode(14, PI_OUTPUT);
 	gpioWrite(14, 0);
@@ -196,14 +262,14 @@ void sendWakeUp() {
 /**
  *
  */
-void sendSyncByte() {
+void Lin::sendSyncByte() {
 	serWriteByte(handle, 0x55);
 }
 
 /**
  *
  */
-void setInitialContents() {
+void Lin::setInitialContents() {
 	messageFrame.id = message;
 	activationFrame.id = activation;
 	initFrame.id = init;
@@ -211,7 +277,7 @@ void setInitialContents() {
 	setFrame(activation, 0x3C, 0xAA, 0x9F, 0x0E, 0x0D, 0x01, 0xFF, 0xFF, 0xFF); //Checksum 0x99
 }
 
-int linInitialise(){
+int Lin::linInitialise(){
 	return gpioInitialise();
 }
 
@@ -222,7 +288,7 @@ int linInitialise(){
  * @param directionRight
  * @param velocityRight value between 0 and 100 (0x64). The velocity of the right engine
  */
-void startMotors(int directionLeft, int velocityLeft, int directionRight,
+void Lin::startMotors(int directionLeft, int velocityLeft, int directionRight,
 		int velocityRight) {
 	setInitialContents();
 	if (handle < 0) {
@@ -244,7 +310,7 @@ void startMotors(int directionLeft, int velocityLeft, int directionRight,
 /**
  *
  */
-void stopMotors() {
+void Lin::stopMotors() {
 	if (handle < 0) {
 		initializeSend();
 	}
@@ -259,3 +325,52 @@ void stopMotors() {
 	gpioSleep(PI_TIME_RELATIVE, 0, 50000);
 	delay(2000);
 }
+	
+	
+	
+LIN.H
+
+#ifndef LIN_H
+#define LIN_H
+
+class Lin
+{
+public:
+	Lin();
+	~Lin();
+	void startMotors(int directionLeft, int velocityLeft, int directionRight, int velocityRight);
+	void stopMotors();
+	void initialiseSend();
+	int linInitialise();
+private:
+	int BAUDRATE = 19200;
+	int handle = -1;
+
+	enum {
+		message = 1, activation = 2, init = 3
+	};
+	struct Frame{
+		int id;
+		int frameContent[10];
+	};
+	Frame initFrame;
+	Frame messageFrame;
+	Frame activationFrame;
+
+	initFrame.id = init;
+	activationFrame.id = activation;
+	messageFrame.id = message;
+
+
+	int setFrame(int id, int data0, int data1, int data2, int data3, int data4,
+			int data5, int data6, int data7, int data8);
+	int getChecksum(int frame[]);
+	void sendMessageFrame();
+	void sendActivationFrame();
+	void sendInitFrame();
+	void sendBreak();
+	void sendWakeUp();
+	void sendSyncByte();
+	void setInitialContents();
+};
+#endif /* LIN_H */
