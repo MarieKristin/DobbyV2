@@ -10,6 +10,7 @@
 using namespace std;
 
 IOControl::IOControl(){
+	serialHandle = 0;
 	BAUDRATE = 19200;
 }
 
@@ -18,6 +19,7 @@ IOControl::~IOControl(){
 }
 
 int IOControl::initialize(){
+	cout << "Initialisierung PIGPIO";
 	return gpioInitialise();
 }
 
