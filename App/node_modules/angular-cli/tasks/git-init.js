@@ -1,12 +1,12 @@
 'use strict';
 
-var Promise = require('ember-cli/lib/ext/promise');
+var Promise = require('../ember-cli/lib/ext/promise');
 var exec = Promise.denodeify(require('child_process').exec);
 var path = require('path');
 var pkg = require('../package.json');
 var fs = require('fs');
 var template = require('lodash/template');
-var Task = require('ember-cli/lib/models/task');
+var Task = require('../ember-cli/lib/models/task');
 
 var gitEnvironmentVariables = {
   GIT_AUTHOR_NAME: 'angular-cli',
@@ -38,21 +38,23 @@ module.exports = Task.extend({
           .catch(function() {
             return false;
           })
-      })    
+      })
       .then(function (insideGitRepo) {
         if (insideGitRepo) {
           return ui.writeLine('Directory is already under version control. Skipping initialization of git.');
-        }  
+        }
         return exec('git init')
           .then(function () {
             return exec('git add .');
           })
           .then(function () {
-            var commitTemplate = fs.readFileSync(
-              path.join(__dirname, '../utilities/INITIAL_COMMIT_MESSAGE.txt'));
-            var commitMessage = template(commitTemplate)(pkg);
-            return exec(
-              'git commit -m "' + commitMessage + '"', { env: gitEnvironmentVariables });
+            if (!commandOptions.skipCommit) {
+              var commitTemplate = fs.readFileSync(
+                path.join(__dirname, '../utilities/INITIAL_COMMIT_MESSAGE.txt'));
+              var commitMessage = template(commitTemplate)(pkg);
+              return exec(
+                'git commit -m "' + commitMessage + '"', { env: gitEnvironmentVariables });
+            }
           })
           .then(function () {
             ui.writeLine(chalk.green('Successfully initialized git.'));
