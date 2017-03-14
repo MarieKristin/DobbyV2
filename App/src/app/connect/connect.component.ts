@@ -20,6 +20,7 @@ export class ConnectComponent {
   private helpEl: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('btn-prim');
   private loader: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('loader');
   private direction: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('direction');
+  private distance: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('distance');
 
   private joystick;
 
@@ -31,6 +32,7 @@ export class ConnectComponent {
       mouseSupport: true,
       stationaryBase: true,
       direction: this.direction[0],
+      distance: this.distance[0],
       baseX: 200,
       baseY: 400,
       limitStickTravel: true,
@@ -94,6 +96,8 @@ export class ConnectComponent {
     this.joystick = new VirtualJoystick({
       mouseSupport: true,
       stationaryBase: true,
+      direction: this.direction[0],
+      distance: this.distance[0],
       baseX: 200,
       baseY: 400,
       limitStickTravel: true,

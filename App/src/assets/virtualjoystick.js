@@ -8,6 +8,7 @@ var VirtualJoystick	= function(opts)
 	this._mouseSupport	= opts.mouseSupport !== undefined ? opts.mouseSupport : false;
 	this._stationaryBase	= opts.stationaryBase || false;
 	this._direction = opts.direction !== undefined ? opts.direction : false;
+	this._distance = opts.distance !== undefined ? opts.distance : false;
 	this._baseX		= this._stickX = opts.baseX || 0
 	this._baseY		= this._stickY = opts.baseY || 0
 	this._limitStickTravel	= opts.limitStickTravel || false
@@ -146,65 +147,28 @@ VirtualJoystick.prototype.left	= function(){
 
 VirtualJoystick.prototype.up	= function(deltaX, deltaY){
 	if( deltaY >= 0 ) return false;
-	if ( Math.abs(deltaX) > ( Math.tan(67.5)*Math.abs(deltaY) )) return false;
+	if( Math.abs(deltaX) > 2*Math.abs(deltaY) )	return false;
+	//if ( Math.abs(deltaX) > ( Math.tan(67.5)*Math.abs(deltaY) )) return false;
 	return true;
 }
 VirtualJoystick.prototype.down	= function(deltaX, deltaY){
 	if( deltaY <= 0 )				return false;
-	if ( Math.abs(deltaX) > ( Math.tan(67.5)*Math.abs(deltaY) ) ) return false;
+	if( Math.abs(deltaX) > 2*Math.abs(deltaY) )	return false;
+	//if ( Math.abs(deltaX) > ( Math.tan(67.5)*Math.abs(deltaY) ) ) return false;
 	return true;
 }
 VirtualJoystick.prototype.right	= function(deltaX, deltaY){
 	if( deltaX <= 0 )				return false;
-	if ( Math.abs(deltaY) > ( Math.tan(67.5)*Math.abs(deltaX) ) ) return false;
+	if( Math.abs(deltaY) > 2*Math.abs(deltaX) )	return false;
+	//if ( Math.abs(deltaY) > ( Math.tan(67.5)*Math.abs(deltaX) ) ) return false;
 	return true;
 }
 VirtualJoystick.prototype.left	= function(deltaX, deltaY){
 	if( deltaX >= 0 )				return false;
-	if ( Math.abs(deltaY) > ( Math.tan(67.5)*Math.abs(deltaX) ) ) return false;
+	if( Math.abs(deltaY) > 2*Math.abs(deltaX) )	return false;
+	//if ( Math.abs(deltaY) > ( Math.tan(67.5)*Math.abs(deltaX) ) ) return false;
 	return true;
 }
-
-/*VirtualJoystick.prototype.u = function() {
-  if ( this.up() && !this.left() && !this.right() ) return true;
-  return false;
-}
-
-VirtualJoystick.prototype.ur = function() {
-  if ( this.up() && this.right() ) return true;
-  return false;
-}
-
-VirtualJoystick.prototype.r = function() {
-  if ( this.right() && !this.up() && !this.down() ) return true;
-  return false;
-}
-
-VirtualJoystick.prototype.dr = function() {
-  if ( this.down() && this.right() ) return true;
-  return false;
-}
-
-VirtualJoystick.prototype.d = function() {
-  if ( this.down() && !this.left() && !this.right() ) return true;
-  return false;
-}
-
-VirtualJoystick.prototype.dl = function() {
-  if ( this.down() && this.left() ) return true;
-  return false;
-}
-
-VirtualJoystick.prototype.l = function() {
-  if ( this.left() && !this.up() && !this.down() ) return true;
-  return false;
-}
-
-VirtualJoystick.prototype.ul = function() {
-  if ( this.up() && this.left() ) return true;
-  return false;
-}
-*/
 
 //////////////////////////////////////////////////////////////////////////////////
 //										//
@@ -214,7 +178,8 @@ VirtualJoystick.prototype._onUp	= function()
 {
 	this._pressed	= false;
 	this._stickEl.style.display	= "none";
-	this._direction.innerHTML = "Direction: Base";
+	if (this._direction != false)	this._direction.innerHTML = "Direction: Base";
+	if (this._distance != false) this._distance.innerHTML = "Distance: 0";
 
 	if(this._stationaryBase == false){
 		this._baseEl.style.display	= "none";
@@ -278,7 +243,7 @@ VirtualJoystick.prototype._onMove	= function(x, y)
 }
 
 VirtualJoystick.prototype._calculateDirection = function() {
-  var dir = 'default';
+  var dir = 'Base';
 
   if( this._pressed === false )	return false;
   var deltaX	= this.deltaX();
@@ -310,6 +275,10 @@ VirtualJoystick.prototype._calculateDirection = function() {
 
   if (this._direction != false) {
     this._direction.innerHTML = "Direction: " + dir;
+  }
+  if (this._distance != false) {
+    var stickDistance = Math.sqrt( (deltaX * deltaX) + (deltaY * deltaY) );
+    this._distance.innerHTML = "Distance: " + Math.round(stickDistance);
   }
 
   return dir;
