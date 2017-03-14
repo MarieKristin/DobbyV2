@@ -115,8 +115,7 @@ VirtualJoystick.prototype.up	= function(){
 	var deltaX	= this.deltaX();
 	var deltaY	= this.deltaY();
 	if( deltaY >= 0 )				return false;
-	//if( Math.abs(deltaX) > 2*Math.abs(deltaY) )	return false;
-	if ( Math.abs(deltaX) > ( Math.tan(Math.unit(67.5, 'deg'))*Math.abs(deltaY) )) return false;
+	if( Math.abs(deltaX) > 2*Math.abs(deltaY) )	return false;
 	return true;
 }
 VirtualJoystick.prototype.down	= function(){
@@ -124,8 +123,7 @@ VirtualJoystick.prototype.down	= function(){
 	var deltaX	= this.deltaX();
 	var deltaY	= this.deltaY();
 	if( deltaY <= 0 )				return false;
-	//if( Math.abs(deltaX) > 2*Math.abs(deltaY) )	return false;
-	if ( Math.abs(deltaX) > ( Math.tan(Math.unit(67.5, 'deg'))*Math.abs(deltaY) ) ) return false;
+	if( Math.abs(deltaX) > 2*Math.abs(deltaY) )	return false;
 	return true;
 }
 VirtualJoystick.prototype.right	= function(){
@@ -133,8 +131,7 @@ VirtualJoystick.prototype.right	= function(){
 	var deltaX	= this.deltaX();
 	var deltaY	= this.deltaY();
 	if( deltaX <= 0 )				return false;
-	//if( Math.abs(deltaY) > 2*Math.abs(deltaX) )	return false;
-	if ( Math.abs(deltaY) > ( Math.tan(Math.unit(67.5, 'deg'))*Math.abs(deltaX) ) ) return false;
+	if( Math.abs(deltaY) > 2*Math.abs(deltaX) )	return false;
 	return true;
 }
 VirtualJoystick.prototype.left	= function(){
@@ -142,8 +139,7 @@ VirtualJoystick.prototype.left	= function(){
 	var deltaX	= this.deltaX();
 	var deltaY	= this.deltaY();
 	if( deltaX >= 0 )				return false;
-	//if( Math.abs(deltaY) > 2*Math.abs(deltaX) )	return false;
-	if ( Math.abs(deltaY) > ( Math.tan(Math.unit(67.5, 'deg'))*Math.abs(deltaX) ) ) return false;
+	if( Math.abs(deltaY) > 2*Math.abs(deltaX) )	return false;
 	return true;
 }
 */
@@ -218,6 +214,7 @@ VirtualJoystick.prototype._onUp	= function()
 {
 	this._pressed	= false;
 	this._stickEl.style.display	= "none";
+	this._direction.innerHTML = "Direction: Base";
 
 	if(this._stationaryBase == false){
 		this._baseEl.style.display	= "none";
