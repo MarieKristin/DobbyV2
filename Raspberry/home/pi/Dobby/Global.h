@@ -2,9 +2,14 @@
 /* Globale Variablen 			     */
 /* ***************************************** */
 
-IOControl *ioControl = new IOControl();
+#pragma once
 
-Lin *lin = new Lin(ioControl);
+LogFiles *logfiles = new LogFiles();
 
-Sensor *sensor = new Sensor(ioControl);
+IOControl *ioControl = new IOControl(logfiles);
+
+Lin *lin = new Lin(ioControl, logfiles);
+
+Sensor *sensor = new Sensor(ioControl, logfiles);
+
 

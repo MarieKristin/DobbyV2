@@ -9,7 +9,8 @@
 
 using namespace std;
 
-IOControl::IOControl(){
+IOControl::IOControl(LogFiles *p_logfiles){
+	logfiles = p_logfiles;
 	serialHandle = 0;
 	BAUDRATE = 19200;
 }
