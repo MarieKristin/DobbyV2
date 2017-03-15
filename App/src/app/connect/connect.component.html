@@ -10,10 +10,6 @@
 <img src="../../assets/ajax-loader.gif" class="loader" alt="Loading..." style="visibility:hidden">
 <p class="error">ERROR: Failed to Connect to the WebSocket Server!</p>
 
-<ul>
-  <li *ngFor="let h of history">{{ h }}</li>
-</ul>
-
 <!--<p class="hidden">
   X: <p id="textView1"></p>
   Y: <p id="textView2"></p>
@@ -32,4 +28,8 @@
   Distance: 0
 </div>
 
-<!--<button type="button" class="btn manual" (click)="back()">Zur&uuml;ck</button>-->
+<button type="button" class="btn manual" (click)="back()">Zur&uuml;ck</button>
+
+<ul>
+  <li *ngFor="let h of history">{{ h }}</li>
+</ul>

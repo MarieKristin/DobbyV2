@@ -23,6 +23,7 @@ export class ConnectComponent {
   private distance: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('distance');
 
   private joystick;
+  private intervalID;
 
   //start of debugging
   public init() {
@@ -43,6 +44,10 @@ export class ConnectComponent {
     for (laufI=0; laufI< this.arrMan.length; laufI++) {
       this.arrMan[laufI].style.display = "block";
     }
+
+    this.history.push('[CLIENT] ' + 'JoyStick initiated');
+    this.intervalID = setInterval(this.sendToMotor, 3000, this.history, this.joystick);
+    //this.intervalID = setInterval(this.sendToMotor, 3000, this.history);
   }
   //end of debugging
 
@@ -122,25 +127,45 @@ export class ConnectComponent {
     for (i=0; i< this.arrMan.length; i++) {
       this.arrMan[i].style.display = "block";
     }
-
-    //this.joystick._container.addEventListener( 'mousemove'	, this.calculateDirection	, false );
-    //this.joystick.addEventListener('moved', this.calculateDirection(), false);
-    //while(1) {
-    //  (<HTMLElement>document.getElementById('debug1')).innerHTML = "Direction: " + this.joystick.calculateDirection();
-    //}
+    //(<HTMLElement>document.getElementById('debug1')).innerHTML = "Direction: " + this.joystick.calculateDirection();
   }
 
-  public back() {
+  private sendToMotor(historyList, joyStick) {
+    var message;
+    var dir = joyStick.getDirection();
+    var dist = joyStick.getDistance();
+
+    switch(dir) {
+      case 'Base':
+        message = '55-00-AA-00';
+        break;
+      case 'up':
+        message = '55-xy-AA-xy';
+        break;
+      case 'down':
+        message = 'AA-xy-55-xy';
+        break;
+      default:
+        message = 'send something';
+        break;
+    }
+    historyList.push('[CLIENT] ' + message);
+    //historyList.push('[CLIENT] ' + 'sendToMotor');
+  }
+
+  private back() {
     var i = 0;
 
+    clearInterval(this.intervalID);
     this.joystick.destroy();
-    this._ws.send('abbrManuell');
+    //this._ws.send('abbrManuell');
     this.history.push('[CLIENT] ' + 'abbrManuell');
     for (i=0; i< this.arrMan.length; i++) {
       this.arrMan[i].style.display = "none";
     }
-    for (i=0; i< this.arrChoose.length; i++) {
-      this.arrChoose[i].style.display = "block";
-    }
+    //for (i=0; i< this.arrChoose.length; i++) {
+    //  this.arrChoose[i].style.display = "block";
+    //}
+    this.helpEl[0].style.display = "block";
   }
 }

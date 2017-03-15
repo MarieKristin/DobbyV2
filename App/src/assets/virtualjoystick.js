@@ -180,6 +180,8 @@ VirtualJoystick.prototype._onUp	= function()
 	this._stickEl.style.display	= "none";
 	if (this._direction != false)	this._direction.innerHTML = "Direction: Base";
 	if (this._distance != false) this._distance.innerHTML = "Distance: 0";
+	this._stickX	= this._baseX;
+	this._stickY	= this._baseY;
 
 	if(this._stationaryBase == false){
 		this._baseEl.style.display	= "none";
@@ -242,6 +244,47 @@ VirtualJoystick.prototype._onMove	= function(x, y)
 	}
 }
 
+VirtualJoystick.prototype.getDirection = function() {
+  var dir = 'Base';
+
+  //if( this._pressed === false )	return false;
+  var deltaX	= this.deltaX();
+  var deltaY	= this.deltaY();
+
+  if ( this.up(deltaX, deltaY) ) {            //so the stick is somewhere in the upper part
+    if ( this.left(deltaX, deltaY) ) {        //so the stick is "up left"
+      dir = 'up-left';
+    } else if ( this.right(deltaX, deltaY) ) {//so the stick is "up right"
+      dir = 'up-right';
+    } else {                                  //so the stick is "up"
+      dir = 'up';
+    }
+  } else if ( this.down(deltaX, deltaY) ) {   //so the stick is somewhere in the lower part
+    if ( this.left(deltaX, deltaY) ) {        //so the stick is "down left"
+        dir = 'down-left';
+      } else if ( this.right(deltaX, deltaY) ) {//so the stick is "down right"
+        dir = 'down-right';
+      } else {                                  //so the stick is "down"
+      dir = 'down';
+    }
+  } else if ( this.left(deltaX, deltaY) ) {   //so the stick is "left"
+    dir = 'left';
+  } else if ( this.right(deltaX, deltaY) ) {  //so the stick is "right"
+    dir = 'right';
+  }                                           //if nothing is fitting for the direction, this means
+                                              //either something went horribly wrong
+                                              //or the stick is in default position
+  return dir;
+}
+
+VirtualJoystick.prototype.getDistance = function() {
+  var deltaX	= this.deltaX();
+  var deltaY	= this.deltaY();
+  var stickDistance = Math.sqrt( (deltaX * deltaX) + (deltaY * deltaY) );
+  stickDistance = Math.round(stickDistance);
+  return stickDistance;
+}
+
 VirtualJoystick.prototype._calculateDirection = function() {
   var dir = 'Base';
 
@@ -281,7 +324,7 @@ VirtualJoystick.prototype._calculateDirection = function() {
     this._distance.innerHTML = "Distance: " + Math.round(stickDistance);
   }
 
-  return dir;
+  //return dir;
   //(<HTMLElement>document.getElementById('debug1')).innerHTML = "Direction: " + dir;
 }
 
