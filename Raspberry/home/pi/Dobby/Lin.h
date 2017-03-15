@@ -6,12 +6,12 @@ enum FrameType
 
 class IOControl;
 class Frame;
-
+class LogFiles;
 class Lin
 {
 public:
 	Lin();
-	Lin(IOControl *p_ioControl);
+	Lin(IOControl *p_ioControl, LogFiles *p_logfiles);
 	~Lin();
 	void setInitFrame(int data0, int data1, int data2, int data3, int data4,
 		int data5, int data6, int data7, int data8);
@@ -25,6 +25,7 @@ public:
 
 private:
 	IOControl *ioControl;
+	LogFiles *logfiles;
 	static int BAUDRATE;
 	static int handle;
 	Frame *initFrame;

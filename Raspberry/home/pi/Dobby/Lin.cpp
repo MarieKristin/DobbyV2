@@ -9,8 +9,9 @@
 #include "IOControl.h"
 
 
-Lin::Lin(IOControl *p_ioControl){
+Lin::Lin(IOControl *p_ioControl, LogFiles *p_logfiles){
 	ioControl = p_ioControl;
+	logfiles = p_logfiles;
 }
 
 Lin::Lin()

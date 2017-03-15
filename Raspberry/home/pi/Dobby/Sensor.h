@@ -1,12 +1,12 @@
 #pragma once
 
 class IOControl;
-
+class LogFiles;
 class Sensor
 {
 public:
 	Sensor();
-	Sensor(IOControl *p_ioControl);
+	Sensor(IOControl *p_ioControl, LogFiles *logfiles);
 	~Sensor();
 
 	// Public Funktionen
@@ -34,7 +34,7 @@ private:
 	static int sens_init;			 // Sensor-Routine Enable ; 7=enable; 0=disable
 	static int ausloeser;			 // Auslöserwinkel Gegenstand im Sensorfeld
 	IOControl *ioControl;
-
+	LogFiles *logfiles;
 	/* ***************************************** */
 	/* Socketadresse - IPv4 or IPv6: 	     */
 	/* ***************************************** */

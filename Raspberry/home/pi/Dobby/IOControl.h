@@ -1,10 +1,10 @@
 #pragma once
 
-
+class LogFiles;
 class IOControl
 {
 public:
-	IOControl();
+	IOControl(LogFiles *p_logfiles);
 	~IOControl();
 	// Public Funktionen
 
@@ -24,4 +24,9 @@ public:
 	unsigned int blinken(int lampe, int geschwindigkeit);
 	void setHandle(int value);
 	int getHandle();
+
+private:
+        LogFiles *logfiles;
+
+
 };

@@ -16,6 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
+#include "LogFiles.h"
+
+
 //Bibliothek für Socket-Verbindung zwischen Raspberry und Handy
 #include <gio/gio.h>
 #include <glib-unix.h> 			// Commandline-Bibliothek
@@ -47,6 +50,7 @@
 #include "Global.h"
 
 using namespace std;
+
 
 
 #define MAX_PAYLOAD 10000		 // Max Datasize der Socket-Verbindungen pro Task
@@ -95,28 +99,6 @@ struct per_session_data {
 	unsigned int len; 													// Länge
 	unsigned int index; 												// Index
 };
-
-/* ***************************************** */
-/* Log-Dateien schreiben 		     */
-/* ***************************************** */
-static void print_log(gint msg_priority, const gchar *msg, ...) {
-	va_list arg;											// Argumentanzeiger
-	va_start(arg, msg); // Initialisierung mit dem ersten optionalen Argument (Pointer, msg)
-	GString *log = g_string_new(NULL); 		// Initialisierung variabeler String
-	g_string_vprintf(log, msg, arg);
-
-#ifdef DEBUG 													 // PRINT_LOG im Debugger
-	g_print ("%s", log->str);
-#endif
-
-#ifdef HAVE_SYSTEMD 												 // PRINT_LOG bei D-Bus (asyncrhone Nachrichten)
-	sd_journal_print (msg_priority, log->str);
-#else 														 // Print_LOG im Raspberry syslog
-	syslog(msg_priority, log->str);
-#endif
-	g_string_free(log, TRUE); 						// Speicherfreigabe String
-	va_end(arg); 									// Ende der Argumentenliste
-}
 
 /* ***************************************** */
 /* Interrupt durch Tastatur ausgelöst 	     */
@@ -287,11 +269,11 @@ static int my_callback(struct libwebsocket_context *context,
 	switch (reason) {
 
 	case LWS_CALLBACK_ESTABLISHED:		// Eintrag sys-LogFile (/var/log/syslog)
-		print_log(LOG_INFO, "(%p) (callback) connection established\n", wsi);
+		logfiles->print_log(LOG_INFO, "(%p) (callback) connection established\n", wsi);
 		break;
 
 	case LWS_CALLBACK_CLOSED:			// Eintrag sys-LogFile (/var/log/syslog)
-		print_log(LOG_INFO, "(%p) (callback) connection closed\n", wsi);
+		logfiles->print_log(LOG_INFO, "(%p) (callback) connection closed\n", wsi);
 		break;
 
 	case LWS_CALLBACK_SERVER_WRITEABLE:	// Anfrage beantwortet (Part 2 von 2)
@@ -299,24 +281,24 @@ static int my_callback(struct libwebsocket_context *context,
 		nbytes = libwebsocket_write(wsi, &psd->buf[LWS_SEND_BUFFER_PRE_PADDING],
 				psd->len, LWS_WRITE_TEXT);
 		memset(&psd->buf[LWS_SEND_BUFFER_PRE_PADDING], 0, psd->len);
-		print_log(LOG_INFO, "(%p) (callback) %d bytes written\n", wsi, nbytes);
+		logfiles->print_log(LOG_INFO, "(%p) (callback) %d bytes written\n", wsi, nbytes);
 		if (nbytes < 0) {
-			print_log(LOG_ERR,
+			logfiles->print_log(LOG_ERR,
 					"(%p) (callback) %d bytes writing to socket, hanging up\n",
 					wsi, nbytes);
 			return 1;
 		}
 		if (nbytes < (int) psd->len) {
-			print_log(LOG_ERR, "(%p) (callback) partial write\n", wsi);
+			logfiles->print_log(LOG_ERR, "(%p) (callback) partial write\n", wsi);
 			return -1; /*TODO*/
 		}
 		break;
 
 	case LWS_CALLBACK_RECEIVE:				// Anfrage bekommen (Part 1 von 2)
-		print_log(LOG_INFO, "(%p) (callback) received %d bytes\n", wsi,
+		logfiles->print_log(LOG_INFO, "(%p) (callback) received %d bytes\n", wsi,
 				(int) len);				// Pro "Symbol" ein Byte
 		if (len > MAX_PAYLOAD) {
-			print_log(LOG_ERR,
+			logfiles->print_log(LOG_ERR,
 					"(%p) (callback) packet bigger than %u, hanging up\n", wsi,
 					MAX_PAYLOAD);	// Falls maximale Länge erreicht
 			return 1;
@@ -397,10 +379,10 @@ int WebSocket_initialisierung(int argc, char **argv) {
 	/* create context 				    */
 	context = libwebsocket_create_context(&info);
 	if (context == NULL) {
-		print_log(LOG_ERR, "(main) libwebsocket context init failed\n");
+		logfiles->print_log(LOG_ERR, "(main) libwebsocket context init failed\n");
 		return -1;
 	}
-	print_log(LOG_INFO, "(main) context - %p\n", context);
+	logfiles->print_log(LOG_INFO, "(main) context - %p\n", context);
 
 	ioControl->writePin(24, 1);
 	ioControl->setDelay(2000);

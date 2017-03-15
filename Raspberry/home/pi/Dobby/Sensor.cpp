@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <netdb.h>
+#include <syslog.h>
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -11,6 +12,8 @@
 #include "stdio.h"
 #include "Sensor.h"
 #include "IOControl.h"
+#include "LogFiles.h"
+#include "Lin.h"
 
 #define PORT "2112"			 	// Port am Sensors
 #define MAXDATASIZE 2000 		 // Max Datasize pro Datenausgabe des Sensors
@@ -22,8 +25,9 @@ int Sensor::sockfd = 0;				 // Socket-File-Description für Sensor
 int Sensor::sens_init = 0;			 // Sensor-Routine Enable ; 7=enable; 0=disable
 int Sensor::ausloeser = 0;			 // Auslöserwinkel Gegenstand im Sensorfeld
 
-Sensor::Sensor(IOControl *p_ioControl){
+Sensor::Sensor(IOControl *p_ioControl, LogFiles *p_logfiles){
 	ioControl = p_ioControl;
+	logfiles = p_logfiles;
 }
 
 Sensor::Sensor(){
@@ -72,6 +76,8 @@ void* Sensor::get_in_addr(struct sockaddr *sa) {
 }
 
 int Sensor::initialize() {
+	logfiles->print_log(LOG_ERR, "SensorInit Start");
+
 	const char* hostname = "192.168.111.111";
 	int new_fd;
 	int numbytes = 0;
@@ -95,17 +101,20 @@ int Sensor::initialize() {
 		if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol))
 				== -1) {
 			perror("client: socket");
+			logfiles->print_log(LOG_ERR, "Sensor-Socket nicht erstellt");
 			continue;
 		}
 		if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) { 	// Connect
 			// close(sockfd);
 			perror("client: connect");
+      	                logfiles->print_log(LOG_ERR, "Verbindung zum Socket fehlgeschlagen");
 			continue;
 		}
 		break;
 	}
 	if (p == NULL) {
 		fprintf(stderr, "client: failed to connect\n");
+		logfiles->print_log(LOG_ERR, "Sensor nicht gefunden.");
 		setSensorRoutine(2);
 		return getSensorRoutine();
 	}
@@ -119,6 +128,7 @@ int Sensor::initialize() {
 	ioControl->setDelay(2000);
 	ioControl->writePin(24, 0);
 	setSensorRoutine(7);
+	logfiles->print_log(LOG_ERR, "SensorInit erfolgreich abgeschlossen");
 	return getSensorRoutine();
 }
 
