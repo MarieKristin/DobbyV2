@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 enum FrameType
 {
 	init, activation, message	//0, 1, 2
@@ -22,7 +23,7 @@ public:
 	void getFrame();
 	void startMotors(int directionLeft, int velocityLeft, int directionRight, int velocityRight);
 	void stopMotors();
-
+	void interpretControlString(std::string inputString);
 private:
 	IOControl *ioControl;
 	LogFiles *logfiles;
