@@ -135,22 +135,65 @@ export class ConnectComponent {
     var dir = joyStick.getDirection();
     var dist = joyStick.getDistance();
 
+    //Bereich von 0-90 abgedeckt durch 0-50 [JoyStick]
+    //prinzipiell also 1 : 9/5=1.8
+    //JoyStick Wertung in 5er Schritten:
+    //0-5   :  0=0x00; 6-10  : 18=0x12
+    //11-15 : 27=0x1B; 16-20 : 36=0x24
+    //21-25 : 45=0x2D; 26-30 : 54=0x36
+    //31-35 : 63=0x3F; 36-40 : 72=0x48
+    //41-45 : 81=0x51; 46-50 : 90=0x5A
+
+    var switch_dist = Math.ceil(dist/5);
+    if(switch_dist == 1 || switch_dist == 0) {
+      dist = 0;
+    } else {
+      dist = ((switch_dist*5)*(1.8*10))/10;
+    }
+
+    if(dist == 0) {
+      var string_dist:String = '00';
+      var other_motor:String = '00';
+    } else {
+      var string_dist:String = dist.toString(16).toUpperCase();
+      var calc_other_motor = Math.round(dist/2);
+      var other_motor:String = calc_other_motor.toString(16).toUpperCase();
+    }
+
     switch(dir) {
       case 'Base':
         message = '55-00-AA-00';
         break;
       case 'up':
-        message = '55-xy-AA-xy';
+        message = '55-' + string_dist + '-AA-' + string_dist;
+        break;
+      case 'up-left':
+        message = '55-' + other_motor + '-AA-' + string_dist;
+        break;
+      case 'up-right':
+        message = '55-' + string_dist + '-AA-' + other_motor;
         break;
       case 'down':
-        message = 'AA-xy-55-xy';
+        message = 'AA-' + string_dist + '-55-' + string_dist;
+        break;
+      case 'down-left':
+        message = 'AA-' + other_motor + '-55-' + string_dist;
+        break;
+      case 'down-right':
+        message = 'AA-' + string_dist + '-55-' + other_motor;
+        break;
+      case 'left':
+        message = 'AA-' + string_dist + '-AA-' + string_dist;
+        break;
+      case 'right':
+        message = '55-' + string_dist + '-55-' + string_dist;
         break;
       default:
         message = 'send something';
         break;
     }
+
     historyList.push('[CLIENT] ' + message);
-    //historyList.push('[CLIENT] ' + 'sendToMotor');
   }
 
   private back() {
