@@ -17,7 +17,8 @@
  */
 
 #include "LogFiles.h"
-
+#include "Timer.h"
+static bool cover;
 
 //Bibliothek für Socket-Verbindung zwischen Raspberry und Handy
 #include <gio/gio.h>
@@ -108,6 +109,17 @@ static gboolean sigint_handler() {
 	exit_loop = TRUE; 									// Beende While-Schleife
 	return TRUE;
 }
+
+void manuelleMotorroutine(){
+	bool manuellEnde = false;
+
+	while(manuellEnde != true){
+		
+	} 
+
+
+}
+
 
 /* ***************************************** */
 /* Antwortnachricht vorbereiten */
@@ -233,6 +245,12 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		ioControl->writePin(25, 0);
 		ioControl->writePin(23, 0);
 	}
+	string manualMode = "manuell";
+	test = s_data.compare(manualMode);
+	if (test == 0) {
+		manuelleMotorroutine();
+	}
+
 	string motorOff = "MotorOff";
 	test = s_data.compare(motorOff);
 	if (test == 0) {
@@ -244,7 +262,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		ioControl->writePin(25, 0);
 		ioControl->writePin(23, 0);
 	}
-
+	cover = true;
 	// Test Ende
 	reply_obj = json_pack("{s:s, s:s}", "Type", "standard", "Message", reply); // Erstellung JSON-Objekt -> "Type standart", "Message REPLY"
 	reply_str = json_dumps(reply_obj, 0);
@@ -418,7 +436,7 @@ int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argum
 
 	WebSocket_initialisierung(argc, argv);
 	// Status für Websocket-Init wird in Funktion implementiert
-	sensor->initialize();
+//	sensor->initialize();
 	// Status fÃ¼r Sensor-Init wird in Funktion implementiert
 	if (sensor->getSensorRoutine() != 7) {
 		ioControl->writePin(23, 1);
@@ -428,11 +446,12 @@ int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argum
 
 	ioControl->writePin(25, 0);
 	ioControl->writePin(27, 0);
-
+	cover = false;
 	/*****************/
 	/* Hauptschleife */
 	/*****************/
 	while (cnt >= 0 && !exit_loop) {
+		timer t;
 		ioControl->writePin(24, 1);
 		if (sensor->getSensorRoutine() == 7) {
 			sensor->startRoutine();
@@ -444,6 +463,8 @@ int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argum
 			send_notification = FALSE;
 		}
 		g_main_context_iteration(NULL, FALSE);
+		t.stop();
+		if(cover == true){cout << t  << endl; cover = false;}
 	}
 
 	/* Abbruchroutine */

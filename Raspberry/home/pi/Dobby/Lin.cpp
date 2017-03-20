@@ -7,7 +7,9 @@
 #include "Frame.h"
 #include "Lin.h"
 #include "IOControl.h"
-
+#define _GLIBCXX_USE_C99 1
+#include <string>
+#include <iostream>
 
 Lin::Lin(IOControl *p_ioControl, LogFiles *p_logfiles){
 	ioControl = p_ioControl;
@@ -55,6 +57,17 @@ void Lin::stopMotors() {
 	sendMessageFrame();
 	ioControl->setSleep(50000);
 	ioControl->setDelay(2000);
+}
+
+void Lin::interpretControlString(std::string inputString){
+
+	int directionLeft = atoi(inputString.substr(0,2).c_str());
+	int velocityLeft = atoi(inputString.substr(3,2).c_str());
+	int directionRight = atoi(inputString.substr(6,2).c_str());
+	int velocityRight = atoi(inputString.substr(9,2).c_str());
+	std::cout << directionLeft << " " << velocityLeft << " " << directionRight << " " << velocityRight << " \n";
+	// Lin::startMotors(directionLeft, velocityLeft, directionRight, velocityRight);
+
 }
 
 void Lin::startMotors(int directionLeft, int velocityLeft, int directionRight,
