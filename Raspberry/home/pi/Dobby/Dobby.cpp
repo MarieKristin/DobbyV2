@@ -19,8 +19,8 @@
 #include "LogFiles.h"
 #include "Timer.h"
 static bool cover;
-
-//Bibliothek für Socket-Verbindung zwischen Raspberry und Handy
+static bool manuellerModus;
+//Bibliothek fÃ¼r Socket-Verbindung zwischen Raspberry und Handy
 #include <gio/gio.h>
 #include <glib-unix.h> 			// Commandline-Bibliothek
 #include <string>
@@ -31,7 +31,7 @@ static bool cover;
 #include <libwebsockets.h>
 #include <iostream>
 
-//Bibliotheken für Sensor
+//Bibliotheken fÃ¼r Sensor
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
@@ -42,7 +42,7 @@ static bool cover;
 #include <arpa/inet.h>
 #include "Sensor.h"
 
-//Bibliotheken für Motor
+//Bibliotheken fÃ¼r Motor
 #include <termios.h>
 #include <pigpio.h>
 #include "Lin.h"
@@ -85,10 +85,10 @@ GOptionEntry entries[] = { { "no-daemon", 'n', 0, G_OPTION_ARG_NONE,
 		&opt_no_daemon, "Don't detach WebSocketsServer into the background",
 		NULL },		 // LongName, shortName, flags,
 		// OptionArgument, Argument_Data,
-		// Erklärung; App ermöglicht kein
+		// ErklÃ¤rung; App ermÃ¶glicht kein
 		// Background-Laufen
 		{ "port", 'p', 0, G_OPTION_ARG_INT, &port,
-				"Port number [default: 8080]", NULL }, // LongName, shortName, flags, OptionArgument, Argument_Data, Erklärung
+				"Port number [default: 8080]", NULL }, // LongName, shortName, flags, OptionArgument, Argument_Data, ErklÃ¤rung
 		{ NULL } };
 
 /* ***************************************** */
@@ -96,27 +96,47 @@ GOptionEntry entries[] = { { "no-daemon", 'n', 0, G_OPTION_ARG_NONE,
 /* ***************************************** */
 struct per_session_data {
 	unsigned char buf[LWS_SEND_BUFFER_PRE_PADDING + MAX_PAYLOAD
-			+ LWS_SEND_BUFFER_POST_PADDING]; 				// Daten
-	unsigned int len; 													// Länge
-	unsigned int index; 												// Index
+			+ LWS_SEND_BUFFER_POST_PADDING]; 					// Daten
+	unsigned int len; 									// LÃ¤nge
+	unsigned int index; 									// Index
 };
 
 /* ***************************************** */
 /* Interrupt durch Tastatur ausgelöst 	     */
 /* ***************************************** */
 static gboolean sigint_handler() {
-	libwebsocket_cancel_service(context); 					// Beende Service
+	libwebsocket_cancel_service(context); 							// Beende Service
 	exit_loop = TRUE; 									// Beende While-Schleife
 	return TRUE;
 }
 
-void manuelleMotorroutine(){
-	bool manuellEnde = false;
+unsigned int manuelleMotorroutine(struct libwebsocket *wsi, unsigned char *data, unsigned char *buffer){
 
-	while(manuellEnde != true){
-		
-	} 
+	string s_data = reinterpret_cast<char*>(data);
+	json_t *reply_obj;
+	char *reply_str;
+	char *reply;
+	int reply_len;
+	asprintf(&reply, "You typed \"%s\"", data); 
 
+	int test = s_data.compare("STOP");
+
+	if(test == 0){
+		lin->stopMotors();
+		manuellerModus = false;
+	}
+	else{
+		lin->interpretControlString(s_data);
+		}
+
+	reply_obj = json_pack("{s:s, s:s}", "Type", "standard", "Message", reply); // Erstellung JSON-Objekt -> "Type standart", "Message REPLY"
+	reply_str = json_dumps(reply_obj, 0);
+	reply_len = strlen(reply_str); 						// LÃ¤nge der Antwort
+	memcpy(buffer, reply_str, reply_len); 					// Kopie an Zieladresse "buffer" von Antwort-Pointer, LÃ¤nge der Antwort
+	json_decref(reply_obj); 						// gibt das JSON-Objekt frei
+	free(reply); 								// gibt den String Antwort frei
+	free(reply_str); 							// gibt den String "reply_str" frei
+	return reply_len; 
 
 }
 
@@ -132,14 +152,14 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	char *reply;
 	int reply_len;
 	int ausgefuehrt = 0;
-	asprintf(&reply, "You typed \"%s\"", data);	// Füge zu den eigegebenen Daten "you typed" hinzu und schreibe in reply
-	//Test Start
-	string lampe = "WebCamera";
-	int test = s_data.compare(lampe); // Vergleiche ob das eigegebene Wort dem Wert von "lampe" entspricht
+	asprintf(&reply, "You typed \"%s\"", data);				// FÃ¼ge zu den eigegebenen Daten "you typed" hinzu und schreibe in reply
+
+	string lampe = "manuell";
+	int test = s_data.compare(lampe); 					// Vergleiche ob das eigegebene Wort dem Wert von "lampe" entspricht
 	if (test == 0) {
-		ioControl->blinken(27, 100);
+		manuellerModus = true;
 	}
-	test = 7; 										 // == 0 ? -> ist gleich
+	test = 7; 								// == 0 ? -> ist gleich
 	string weiss = "TestW";
 	test = s_data.compare(weiss);
 	if (test == 0) {
@@ -245,11 +265,6 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		ioControl->writePin(25, 0);
 		ioControl->writePin(23, 0);
 	}
-	string manualMode = "manuell";
-	test = s_data.compare(manualMode);
-	if (test == 0) {
-		manuelleMotorroutine();
-	}
 
 	string motorOff = "MotorOff";
 	test = s_data.compare(motorOff);
@@ -266,16 +281,16 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	// Test Ende
 	reply_obj = json_pack("{s:s, s:s}", "Type", "standard", "Message", reply); // Erstellung JSON-Objekt -> "Type standart", "Message REPLY"
 	reply_str = json_dumps(reply_obj, 0);
-	reply_len = strlen(reply_str); 						// Länge der Antwort
-	memcpy(buffer, reply_str, reply_len); // Kopie an Zieladresse "buffer" von Antwort-Pointer, Länge der Antwort
+	reply_len = strlen(reply_str); 						// LÃ¤nge der Antwort
+	memcpy(buffer, reply_str, reply_len); 					// Kopie an Zieladresse "buffer" von Antwort-Pointer, LÃ¤nge der Antwort
 	json_decref(reply_obj); 						// gibt das JSON-Objekt frei
 	free(reply); 								// gibt den String Antwort frei
-	free(reply_str); 						// gibt den String "reply_str" frei
-	return reply_len; 					// gibt die Länge der Antwort zurück
+	free(reply_str); 							// gibt den String "reply_str" frei
+	return reply_len; 							// gibt die LÃ¤nge der Antwort zurÃ¼ck
 }
 
 /* 	*****************************************	*/
-/* 	callback-Funktionen							*/
+/* 	callback-Funktionen				*/
 /* 	*****************************************	*/
 static int my_callback(struct libwebsocket_context *context,
 		struct libwebsocket *wsi, enum libwebsocket_callback_reasons reason,
@@ -286,7 +301,7 @@ static int my_callback(struct libwebsocket_context *context,
 
 	switch (reason) {
 
-	case LWS_CALLBACK_ESTABLISHED:		// Eintrag sys-LogFile (/var/log/syslog)
+	case LWS_CALLBACK_ESTABLISHED:			// Eintrag sys-LogFile (/var/log/syslog)
 		logfiles->print_log(LOG_INFO, "(%p) (callback) connection established\n", wsi);
 		break;
 
@@ -294,7 +309,7 @@ static int my_callback(struct libwebsocket_context *context,
 		logfiles->print_log(LOG_INFO, "(%p) (callback) connection closed\n", wsi);
 		break;
 
-	case LWS_CALLBACK_SERVER_WRITEABLE:	// Anfrage beantwortet (Part 2 von 2)
+	case LWS_CALLBACK_SERVER_WRITEABLE:		// Anfrage beantwortet (Part 2 von 2)
 
 		nbytes = libwebsocket_write(wsi, &psd->buf[LWS_SEND_BUFFER_PRE_PADDING],
 				psd->len, LWS_WRITE_TEXT);
@@ -312,20 +327,27 @@ static int my_callback(struct libwebsocket_context *context,
 		}
 		break;
 
-	case LWS_CALLBACK_RECEIVE:				// Anfrage bekommen (Part 1 von 2)
+	case LWS_CALLBACK_RECEIVE:					// Anfrage bekommen (Part 1 von 2)
 		logfiles->print_log(LOG_INFO, "(%p) (callback) received %d bytes\n", wsi,
 				(int) len);				// Pro "Symbol" ein Byte
 		if (len > MAX_PAYLOAD) {
 			logfiles->print_log(LOG_ERR,
 					"(%p) (callback) packet bigger than %u, hanging up\n", wsi,
-					MAX_PAYLOAD);	// Falls maximale Länge erreicht
+					MAX_PAYLOAD);			// Falls maximale LÃ¤nge erreicht
 			return 1;
 		}
-
+		
+		if(manuellerModus == false){				//bei manuellem Modus wird Bit gesetzt -> dann nur Steuerbefehle
 		psd->len = prepare_reply(wsi, (unsigned char*) in, &psd->buf[LWS_SEND_BUFFER_PRE_PADDING]);
 				if (psd->len > 0) {
 					libwebsocket_callback_on_writable(context, wsi);
-				}
+				}}
+		else{
+		psd->len = manuelleMotorroutine(wsi, (unsigned char*) in, &psd->buf[LWS_SEND_BUFFER_PRE_PADDING]);
+				if (psd->len > 0) {
+					libwebsocket_callback_on_writable(context, wsi);
+				}}
+
 		break;
 
 	default:
@@ -338,9 +360,9 @@ static int my_callback(struct libwebsocket_context *context,
 /* ***************************************** */
 /* Beschreibung des Protokolls 		     */
 /* ***************************************** */
-static struct libwebsocket_protocols protocols[] = { { "my_protocol", // Protokoll-Name
-		my_callback, 										// Callback-Funktion
-		sizeof(struct per_session_data) }, 				// Datengröße je Session
+static struct libwebsocket_protocols protocols[] = { { "my_protocol", 		// Protokoll-Name
+		my_callback, 							// Callback-Funktion
+		sizeof(struct per_session_data) }, 				// DatengrÃ¶ÃŸe je Session
 		{ NULL, NULL, 0 } };
 
 /* ***************************************** */
@@ -352,11 +374,11 @@ int WebSocket_initialisierung(int argc, char **argv) {
 	gint signal_id = 0;
 	struct lws_context_creation_info info;
 
-	/* Phase 1: Optionen überprüfen	   */
-	/* Commandline Optionen überprüfen */
-	option_context = g_option_context_new("- WebSocketsServer"); // WebSockets-Optionen deklarieren z.B. <Pfad> -h --no-daemon
-	g_option_context_add_main_entries(option_context, entries, NULL); // Optionen hinzufügen
-	if (!g_option_context_parse(option_context, &argc, &argv, &error)) // Überprüft/Parst die Command-Line-Options -> keine Fehler: TRUE
+	/* Phase 1: Optionen ÃœberprÃ¼fen	   */
+	/* Commandline Optionen ÃœberprÃ¼fen */
+	option_context = g_option_context_new("- WebSocketsServer"); 		// WebSockets-Optionen deklarieren z.B. <Pfad> -h --no-daemon
+	g_option_context_add_main_entries(option_context, entries, NULL); 	// Optionen hinzufÃ¼gen
+	if (!g_option_context_parse(option_context, &argc, &argv, &error)) 	// ÃœberprÃ¼ft/Parst die Command-Line-Options -> keine Fehler: TRUE
 			{
 		g_printerr("%s: %s\n", argv[0], error->message);
 		exit_value = EXIT_FAILURE;
@@ -377,17 +399,17 @@ int WebSocket_initialisierung(int argc, char **argv) {
 	/* Phase 3: Initialisierung Server-Eigenschaften */
 	/* Minimalkonfiguration			   */
 	/* fill 'lws_context_creation_info' struct 	   */
-	memset(&info, 0, sizeof info); 						// Speicherreservierung
-	info.port = port; 								// Port für die Verbindung
+	memset(&info, 0, sizeof info); 								// Speicherreservierung
+	info.port = port; 									// Port fÃ¼r die Verbindung
 	info.iface = "wlan0";
-	//info.iface = NULL; 										// keine Wertzuweisung
+	//info.iface = NULL; 									// keine Wertzuweisung
 	info.protocols = protocols; // Beschreibung des Protokolls in Zeile 284 (struct)
 	info.extensions = libwebsocket_get_internal_extensions();
 	info.gid = -1; 										// Gruppen-ID
 	info.uid = -1; 										// User-ID
 	info.options = 0;
-	info.ssl_cert_filepath = NULL; 						// keine Wertzuweisung
-	info.ssl_private_key_filepath = NULL; 				// keine Wertzuweisung
+	info.ssl_cert_filepath = NULL; 								// keine Wertzuweisung
+	info.ssl_private_key_filepath = NULL; 							// keine Wertzuweisung
 
 	/* Phase 4: Interrupt durch Tastatur */
 	/* handle SIGINT		       */
@@ -446,7 +468,9 @@ int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argum
 
 	ioControl->writePin(25, 0);
 	ioControl->writePin(27, 0);
-	cover = false;
+
+	cover = false;		// Bit fÃ¼r Zeitmessungen
+	manuellerModus = false;
 	/*****************/
 	/* Hauptschleife */
 	/*****************/
@@ -456,12 +480,18 @@ int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argum
 		if (sensor->getSensorRoutine() == 7) {
 			sensor->startRoutine();
 		}
+		if(manuellerModus == false){
+			cnt = libwebsocket_service(context, 10);			// u.a. neue Verbindungen werden akzeptiert ; ggf. setzen des send_notification
+			}
+		else{
+			cnt = libwebsocket_service(context, 3000);
+			}
 
-		cnt = libwebsocket_service(context, 10);// u.a. neue Verbindungen werden akzeptiert ; ggf. setzen des send_notification
 		if (send_notification) {
 			libwebsocket_callback_on_writable_all_protocol(&protocols[0]);
 			send_notification = FALSE;
 		}
+/*		else if(manuellerModus == true){ lin->stopMotors(); manuellerModus = false;}*/
 		g_main_context_iteration(NULL, FALSE);
 		t.stop();
 		if(cover == true){cout << t  << endl; cover = false;}
