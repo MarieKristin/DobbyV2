@@ -1,3 +1,4 @@
+//import {Component, OnInit} from '@angular/core';
 import {Component, OnInit, AfterViewInit} from '@angular/core';
 
 @Component({
@@ -6,8 +7,35 @@ import {Component, OnInit, AfterViewInit} from '@angular/core';
   styleUrls: ['./graphics.component.css']
 })
 export class GraphicsComponent implements AfterViewInit {
+  public errorHappened(ws, document) {
+    (<HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('errorDiv'))[0].style.display = "block";
+    ws.close();
+  }
 
-  public container;
+  public ngAfterViewInit() {
+    var history;
+    var ws = new WebSocket('ws://192.168.0.1:8080');
+
+    ws.onopen = event => {
+      ws.onmessage = event => {
+        clearTimeout(timeOut);
+        (<HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('successFrame'))[0].style.display = "block";
+        ws.close();
+      };
+
+      ws.send('test');
+      var timeOut = setTimeout(this.errorHappened, 3000, ws, document);
+    }
+
+    ws.onerror = event => {
+      this.errorHappened(ws, document);
+    }
+  }
+
+
+//export class GraphicsComponent implements AfterViewInit {
+
+  /*public container;
   public camera;
   public scene;
   public renderer;
@@ -57,5 +85,5 @@ export class GraphicsComponent implements AfterViewInit {
     this.controls.update();
 
     this.renderer.render(this.scene, this.camera);
-  }
+  }*/
 }
