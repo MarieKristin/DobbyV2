@@ -15,4 +15,5 @@ private:
 	int id;
 	int content[10];
 	int getChecksum();
+
 };

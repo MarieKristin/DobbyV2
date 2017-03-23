@@ -140,7 +140,7 @@ void Sensor::startRoutine() {
 
 	int sent = send(sockfd, msg.data(), len, 0);	 // Befehl zur Messwertanforderung
 	if (sent != -1) {
-		printf("%s gesendet, %d Bytes\n", msg.data(), sent);
+//		printf("%s gesendet, %d Bytes\n", msg.data(), sent);
 	}
 	if (sent == -1) {
 		printf("Senden fehlgeschlagen\n");
@@ -150,7 +150,7 @@ void Sensor::startRoutine() {
 
 	numbytes = recv(sockfd, buf, MAXDATASIZE - 1, 0);	// Empfang der Messwerte
 	buf[numbytes] = '\0';					// Abschluss des Messwert-Strings
-	printf("client: received '%s'\n", buf);
+//	printf("client: received '%s'\n", buf);
 
 	char Messdateneinheit[6] = "DIST1";	// Startwert der Messkomponenten zur Auswertung
 	int pos_search = 0;							//
@@ -164,8 +164,8 @@ void Sensor::startRoutine() {
 			++pos_search;
 			if (pos_search == len_search) {
 				// match
-				printf("match from %d to %d\n", pos_text - len_search,
-						pos_text);
+//				printf("match from %d to %d\n", pos_text - len_search,
+//						pos_text);
 				break;
 			}
 		} else {
@@ -234,7 +234,7 @@ void Sensor::startRoutine() {
 	int l = 0;
 	char Entfernung[5];										// Entfernung in mm
 	int AnzahlDaten = (int) strtol(Anzahl_Daten, NULL, 16);
-	printf("%d\n", AnzahlDaten);
+//	printf("%d\n", AnzahlDaten);
 
 	for (k = 1; k < 181; k++) {
 		while (buf[i] != ' ') {
@@ -255,16 +255,16 @@ void Sensor::startRoutine() {
 				if (entfernung < 180) {
 					ausloeser = k;
 					ioControl->writePin(27, 1);
-					printf("STOP\n");
+//					printf("STOP\n");
 				} else {
-					printf("ACHTUNG\n");
+//					printf("ACHTUNG\n");
 					if (k == ausloeser) {
 						ioControl->writePin(27, 0);
 						ausloeser = 0;
 					}
 				}
 			} else {
-				printf("alles ok\n");
+//				printf("alles ok\n");
 				if (k == ausloeser) {
 					ioControl->writePin(27, 0);
 					ausloeser = 0;
@@ -274,6 +274,6 @@ void Sensor::startRoutine() {
 		i++;
 		l = 0;
 	}
-	printf("Ende-Sensor\n");
+//	printf("Ende-Sensor\n");
 }
 

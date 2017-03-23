@@ -10,6 +10,7 @@
 #define _GLIBCXX_USE_C99 1
 #include <string>
 #include <iostream>
+#include <sstream>
 
 Lin::Lin(IOControl *p_ioControl, LogFiles *p_logfiles){
 	ioControl = p_ioControl;
@@ -26,28 +27,28 @@ Lin::~Lin()
 
 void Lin::setInitFrame(int data0, int data1, int data2, int data3, int data4, int data5, int data6, int data7, int data8)
 {
-	initFrame->setContent(data0, data1, data2, data3, data4, data5, data6, data7, data8);
+	initFrame.setContent(data0, data1, data2, data3, data4, data5, data6, data7, data8);
 }
 
 void Lin::setActivationFrame(int data0, int data1, int data2, int data3, int data4, int data5, int data6, int data7, int data8)
 {
-	activationFrame->setContent(data0, data1, data2, data3, data4, data5, data6, data7, data8);
+	activationFrame.setContent(data0, data1, data2, data3, data4, data5, data6, data7, data8);
 }
 
 void Lin::setMessageFrame(int data0, int data1, int data2, int data3, int data4, int data5, int data6, int data7, int data8)
 {
-	messageFrame->setContent(data0, data1, data2, data3, data4, data5, data6, data7, data8);
+	messageFrame.setContent(data0, data1, data2, data3, data4, data5, data6, data7, data8);
 }
 
 void Lin::getFrame() {
-	activationFrame->getFrame();
+	activationFrame.getFrame();
 }
 
 void Lin::stopMotors() {
 	if (ioControl->getHandle() < 0) {
 		ioControl->openSerial();
 	}
-	messageFrame->setContent(0x3C, 0x84, 0xAA, 0x00, 0x55, 0xA5, 0xAA, 0x00, 0xFF);
+	messageFrame.setContent(0x3C, 0x84, 0xAA, 0x00, 0x55, 0xA5, 0xAA, 0x00, 0xFF);
 	sendWakeUp();
 	ioControl->setSleep(310000);
 	sendInitFrame();
@@ -61,12 +62,30 @@ void Lin::stopMotors() {
 
 void Lin::interpretControlString(std::string inputString){
 
-	int directionLeft = atoi(inputString.substr(0,2).c_str());
-	int velocityLeft = atoi(inputString.substr(3,2).c_str());
-	int directionRight = atoi(inputString.substr(6,2).c_str());
-	int velocityRight = atoi(inputString.substr(9,2).c_str());
-	std::cout << directionLeft << " " << velocityLeft << " " << directionRight << " " << velocityRight << " \n";
-	// Lin::startMotors(directionLeft, velocityLeft, directionRight, velocityRight);
+	std::stringstream puffer;
+	std::stringstream puffer1;
+	int directionLeft;
+		puffer  << (inputString.substr(0,2));
+		puffer  >> std::hex >> directionLeft;
+		puffer.str("");
+		puffer.clear();
+
+	int velocityLeft;
+		puffer  << (inputString.substr(3,2));
+		puffer  >> std::hex >> velocityLeft;
+		puffer.str("");
+		puffer.clear();
+
+	int directionRight;
+		puffer  << (inputString.substr(6,2));
+		puffer  >> std::hex >> directionRight;
+		puffer.str("");
+		puffer.clear();
+	int velocityRight;
+		puffer  << (inputString.substr(9,2));
+		puffer  >> std::hex >> velocityRight;
+//	std::cout << directionLeft << " " << velocityLeft << " " << directionRight << " " << velocityRight << " \n";
+	startMotors(directionLeft, velocityLeft, directionRight, velocityRight);
 
 }
 
@@ -76,7 +95,7 @@ void Lin::startMotors(int directionLeft, int velocityLeft, int directionRight,
 	if (ioControl->getHandle() < 0) {
 		ioControl->openSerial();
 	}
-	messageFrame->setContent(0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5,
+	messageFrame.setContent(0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5,
 		directionRight, velocityRight, 0xFF);
 	sendWakeUp();
 	ioControl->setSleep(310000);  //Warte 310ms
@@ -90,13 +109,12 @@ void Lin::startMotors(int directionLeft, int velocityLeft, int directionRight,
 }
 
 void Lin::setInitialContents() {
-	initFrame->setID(init);
-	messageFrame->setID(message);
-	activationFrame->setID(activation);
-
-	initFrame->setContent(0x3C, 0xA0, 0x02, 0x10, 0x84, 0xFF, 0xFF, 0xFF, 0xFF); //Checksum 0xC8
-	activationFrame->setContent(0x3C, 0xAA, 0x9F, 0x0E, 0x0D, 0x01, 0xFF, 0xFF, 0xFF); //Checksum 0x99
-	messageFrame->setContent(0x3C, 0x84, 0xAA, 0x00, 0x55, 0xA5, 0xAA, 0x00, 0xFF); //Checksum 2B
+	initFrame.setID(init);
+	messageFrame.setID(message);
+	activationFrame.setID(activation);
+	initFrame.setContent(0x3C, 0xA0, 0x02, 0x10, 0x84, 0xFF, 0xFF, 0xFF, 0xFF); //Checksum 0xC8
+	activationFrame.setContent(0x3C, 0xAA, 0x9F, 0x0E, 0x0D, 0x01, 0xFF, 0xFF, 0xFF); //Checksum 0x99
+	messageFrame.setContent(0x3C, 0x84, 0xAA, 0x00, 0x55, 0xA5, 0xAA, 0x00, 0xFF); //Checksum 2B
 }
 
 void Lin::sendSyncByte() {
@@ -129,8 +147,8 @@ void Lin::sendInitFrame() {
 	sendBreak();
 	sendSyncByte();
 	int i;
-	for (i = 0; i < initFrame->getSize(); i++) {
-		ioControl->writeByte(initFrame->getFrame()[i]);
+	for (i = 0; i < initFrame.getSize(); i++) {
+		ioControl->writeByte(initFrame.getFrame()[i]);
 	}
 }
 
@@ -138,8 +156,8 @@ void Lin::sendActivationFrame() {
 	sendBreak();
 	sendSyncByte();
 	int i;
-	for (i = 0; i < activationFrame->getSize(); i++) {
-		ioControl->writeByte(activationFrame->getFrame()[i]);
+	for (i = 0; i < activationFrame.getSize(); i++) {
+		ioControl->writeByte(activationFrame.getFrame()[i]);
 	}
 }
 
@@ -147,8 +165,8 @@ void Lin::sendMessageFrame() {
 	sendBreak();
 	sendSyncByte();
 	int i;
-	for (i = 0; i < messageFrame->getSize(); i++) {
-		ioControl->writeByte(messageFrame->getFrame()[i]);
+	for (i = 0; i < messageFrame.getSize(); i++) {
+		ioControl->writeByte(messageFrame.getFrame()[i]);
 	}
 }
 
