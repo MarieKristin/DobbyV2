@@ -26,7 +26,7 @@ export class ConnectComponent {
   private intervalID;
 
   //start of debugging
-  public init() {
+  /*public init() {
     this.helpEl[0].style.display = "none";
 
     this.joystick = new VirtualJoystick({
@@ -48,7 +48,7 @@ export class ConnectComponent {
     this.history.push('[CLIENT] ' + 'JoyStick initiated');
     this.intervalID = setInterval(this.sendToMotor, 3000, this.history, this.joystick);
     //this.intervalID = setInterval(this.sendToMotor, 3000, this.history);
-  }
+  }*/
   //end of debugging
 
   // TODO: In einen Angular 2 Service schieben
@@ -64,6 +64,7 @@ export class ConnectComponent {
     //this._ws = new WebSocket('ws://192.168.178.50:8080');
 
     var timeOut = setTimeout( function () {
+      this._ws.close();
       (<HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('loader'))[0].style.visibility = "hidden";
       (<HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('error'))[0].style.display = "block";
     }, 3000);
@@ -90,8 +91,8 @@ export class ConnectComponent {
     //this.history.push('[CLIENT] ' + this.command);
 
     //this._ws.send(this.command);
-    this._ws.send('auto');
-    this.history.push('[CLIENT] ' + 'auto');
+    this._ws.send('automatik');
+    this.history.push('[CLIENT] ' + 'automatik');
 
     //this.command = '';
   }
@@ -109,16 +110,10 @@ export class ConnectComponent {
       stickRadius: 50
     });
 
+    this.intervalID = setInterval(this.sendToMotor, 500, this.history, this.joystick, this._ws);
 
-    //if (!this.command) {
-    //  return;
-    //}
-
-    //this.history.push('[CLIENT] ' + this.command);
-
-    //this._ws.send(this.command);
-    this._ws.send('manual');
-    this.history.push('[CLIENT] ' + 'manual');
+    this._ws.send('manuell');
+    this.history.push('[CLIENT] ' + 'manuell');
 
     //this.command = '';
     for (i=0; i< this.arrChoose.length; i++) {
@@ -130,7 +125,7 @@ export class ConnectComponent {
     //(<HTMLElement>document.getElementById('debug1')).innerHTML = "Direction: " + this.joystick.calculateDirection();
   }
 
-  private sendToMotor(historyList, joyStick) {
+  private sendToMotor(historyList, joyStick, webSocket) {
     var message;
     var dir = joyStick.getDirection();
     var dist = joyStick.getDistance();
@@ -193,7 +188,8 @@ export class ConnectComponent {
         break;
     }
 
-    historyList.push('[CLIENT] ' + message);
+    webSocket.send(message);
+    //historyList.push('[CLIENT] ' + message);
   }
 
   private back() {
@@ -201,14 +197,14 @@ export class ConnectComponent {
 
     clearInterval(this.intervalID);
     this.joystick.destroy();
-    //this._ws.send('abbrManuell');
-    this.history.push('[CLIENT] ' + 'abbrManuell');
+    this._ws.send('STOP');
+    this.history.push('[CLIENT] ' + 'STOP');
     for (i=0; i< this.arrMan.length; i++) {
       this.arrMan[i].style.display = "none";
     }
-    //for (i=0; i< this.arrChoose.length; i++) {
-    //  this.arrChoose[i].style.display = "block";
-    //}
-    this.helpEl[0].style.display = "block";
+    for (i=0; i< this.arrChoose.length; i++) {
+      this.arrChoose[i].style.display = "block";
+    }
+    //this.helpEl[0].style.display = "block";
   }
 }
