@@ -31,6 +31,9 @@ var VirtualJoystick	= function(opts)
 		this._baseEl.style.display	= "";
 		this._baseEl.style.left		= (this._baseX - this._baseEl.width /2)+"px";
 		this._baseEl.style.top		= (this._baseY - this._baseEl.height/2)+"px";
+		this._stickEl.style.display = "";
+		this._stickEl.style.left  = (this._baseX - this._stickEl.width/2)+"px";
+		this._stickEl.style.top   = (this._baseY - this._stickEl.height/2)+"px";
 	}
 
 	this._transform	= this._useCssTransform ? this._getTransformProperty() : false;
@@ -177,9 +180,13 @@ VirtualJoystick.prototype.left	= function(deltaX, deltaY){
 VirtualJoystick.prototype._onUp	= function()
 {
 	this._pressed	= false;
-	this._stickEl.style.display	= "none";
+	//this._stickEl.style.display	= "none";
+	this._move(this._stickEl.style, (this._baseX - this._stickEl.width / 2), (this._baseY - this._stickEl.height / 2));
+	//style display in center
 	if (this._direction != false)	this._direction.innerHTML = "Direction: Base";
 	if (this._distance != false) this._distance.innerHTML = "Distance: 0";
+	this._stickX	= this._baseX;
+	this._stickY	= this._baseY;
 
 	if(this._stationaryBase == false){
 		this._baseEl.style.display	= "none";
@@ -215,7 +222,8 @@ VirtualJoystick.prototype._onDown	= function(x, y)
 		}
 	}
 
-	this._stickEl.style.display	= "";
+	//this._stickEl.style.display	= "";
+	//style display
 	this._move(this._stickEl.style, (this._stickX - this._stickEl.width /2), (this._stickY - this._stickEl.height/2));
 }
 
@@ -240,6 +248,47 @@ VirtualJoystick.prototype._onMove	= function(x, y)
     this._calculateDirection();
     this._move(this._stickEl.style, (this._stickX - this._stickEl.width /2), (this._stickY - this._stickEl.height/2));
 	}
+}
+
+VirtualJoystick.prototype.getDirection = function() {
+  var dir = 'Base';
+
+  //if( this._pressed === false )	return false;
+  var deltaX	= this.deltaX();
+  var deltaY	= this.deltaY();
+
+  if ( this.up(deltaX, deltaY) ) {            //so the stick is somewhere in the upper part
+    if ( this.left(deltaX, deltaY) ) {        //so the stick is "up left"
+      dir = 'up-left';
+    } else if ( this.right(deltaX, deltaY) ) {//so the stick is "up right"
+      dir = 'up-right';
+    } else {                                  //so the stick is "up"
+      dir = 'up';
+    }
+  } else if ( this.down(deltaX, deltaY) ) {   //so the stick is somewhere in the lower part
+    if ( this.left(deltaX, deltaY) ) {        //so the stick is "down left"
+        dir = 'down-left';
+      } else if ( this.right(deltaX, deltaY) ) {//so the stick is "down right"
+        dir = 'down-right';
+      } else {                                  //so the stick is "down"
+      dir = 'down';
+    }
+  } else if ( this.left(deltaX, deltaY) ) {   //so the stick is "left"
+    dir = 'left';
+  } else if ( this.right(deltaX, deltaY) ) {  //so the stick is "right"
+    dir = 'right';
+  }                                           //if nothing is fitting for the direction, this means
+                                              //either something went horribly wrong
+                                              //or the stick is in default position
+  return dir;
+}
+
+VirtualJoystick.prototype.getDistance = function() {
+  var deltaX	= this.deltaX();
+  var deltaY	= this.deltaY();
+  var stickDistance = Math.sqrt( (deltaX * deltaX) + (deltaY * deltaY) );
+  stickDistance = Math.round(stickDistance);
+  return stickDistance;
 }
 
 VirtualJoystick.prototype._calculateDirection = function() {
@@ -281,7 +330,7 @@ VirtualJoystick.prototype._calculateDirection = function() {
     this._distance.innerHTML = "Distance: " + Math.round(stickDistance);
   }
 
-  return dir;
+  //return dir;
   //(<HTMLElement>document.getElementById('debug1')).innerHTML = "Direction: " + dir;
 }
 
@@ -396,18 +445,24 @@ VirtualJoystick.prototype._buildJoystickBase	= function()
 	canvas.height	= 126;
 
 	var ctx		= canvas.getContext('2d');
-	ctx.beginPath();
-	ctx.strokeStyle = this._strokeStyle;
-	ctx.lineWidth	= 6;
-	ctx.arc( canvas.width/2, canvas.width/2, 40, 0, Math.PI*2, true);
-	ctx.stroke();
+	var base_image = new Image();
+	base_image.onload = function() {
+	  ctx.drawImage(base_image,0,0,canvas.width,canvas.height);
+	}
+	base_image.onerror = function() {
+	  ctx.beginPath();
+    ctx.strokeStyle = this._strokeStyle;
+    ctx.lineWidth	= 6;
+    ctx.arc( canvas.width/2, canvas.width/2, 40, 0, Math.PI*2, true);
+    ctx.stroke();
 
-	ctx.beginPath();
-	ctx.strokeStyle	= this._strokeStyle;
-	ctx.lineWidth	= 2;
-	ctx.arc( canvas.width/2, canvas.width/2, 60, 0, Math.PI*2, true);
-	ctx.stroke();
-
+    ctx.beginPath();
+    ctx.strokeStyle	= this._strokeStyle;
+    ctx.lineWidth	= 2;
+    ctx.arc( canvas.width/2, canvas.width/2, 60, 0, Math.PI*2, true);
+    ctx.stroke();
+	}
+	base_image.src = '/assets/image_button_bg.png';
 	return canvas;
 }
 
@@ -420,11 +475,19 @@ VirtualJoystick.prototype._buildJoystickStick	= function()
 	canvas.width	= 86;
 	canvas.height	= 86;
 	var ctx		= canvas.getContext('2d');
-	ctx.beginPath();
-	ctx.strokeStyle	= this._strokeStyle;
-	ctx.lineWidth	= 6;
-	ctx.arc( canvas.width/2, canvas.width/2, 40, 0, Math.PI*2, true);
-	ctx.stroke();
+
+	var stick_image = new Image();
+  stick_image.onload = function() {
+    ctx.drawImage(stick_image,0,0,canvas.width,canvas.height);
+  }
+  stick_image.onerror = function() {
+    ctx.beginPath();
+    ctx.strokeStyle	= this._strokeStyle;
+    ctx.lineWidth	= 6;
+    ctx.arc( canvas.width/2, canvas.width/2, 40, 0, Math.PI*2, true);
+    ctx.stroke();
+  }
+  stick_image.src = '/assets/image_button.png';
 	return canvas;
 }
 
@@ -438,17 +501,13 @@ VirtualJoystick.prototype._move = function(style, x, y)
 	if (this._transform) {
 		if (this._has3d) {
 			style[this._transform] = 'translate3d(' + x + 'px,' + y + 'px, 0)';
-			//this._calculateDirection();
 		} else {
 			style[this._transform] = 'translate(' + x + 'px,' + y + 'px)';
-			//this._calculateDirection();
 		}
 	} else {
 		style.left = x + 'px';
 		style.top = y + 'px';
-		//this._calculateDirection();
 	}
-	//this._calculateDirection();
 }
 
 VirtualJoystick.prototype._getTransformProperty = function()

@@ -20,7 +20,7 @@ export class ConsoleComponent {
   constructor() {  }
 
   public connect() {
-    this._ws = new WebSocket('ws://192.168.0.1:8080');
+    this._ws = new WebSocket('ws://192.168.0.1:2609');
 
     this._ws.onmessage = event => {
       this.history.push('[SERVER] ' + event.data);

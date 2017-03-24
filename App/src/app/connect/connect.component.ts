@@ -60,8 +60,7 @@ export class ConnectComponent {
     this.helpEl[0].style.display = "none";
     this.loader[0].style.display = "block";
 
-    this._ws = new WebSocket('ws://192.168.0.1:8080');
-    //this._ws = new WebSocket('ws://192.168.178.50:8080');
+    this._ws = new WebSocket('ws://192.168.0.1:2609');
 
     var timeOut = setTimeout(this.timeOutConnect, 3000, this._ws, this.loader[0]);
 

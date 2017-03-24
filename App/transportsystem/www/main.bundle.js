@@ -20,6 +20,30 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 
 
 var ConnectComponent = (function () {
+    //start of debugging
+    /*public init() {
+      this.helpEl[0].style.display = "none";
+  
+      this.joystick = new VirtualJoystick({
+        mouseSupport: true,
+        stationaryBase: true,
+        direction: this.direction[0],
+        distance: this.distance[0],
+        baseX: 200,
+        baseY: 400,
+        limitStickTravel: true,
+        stickRadius: 50
+      });
+  
+      var laufI;
+      for (laufI=0; laufI< this.arrMan.length; laufI++) {
+        this.arrMan[laufI].style.display = "block";
+      }
+  
+      this.history.push('[CLIENT] ' + 'JoyStick initiated');
+      this.intervalID = setInterval(this.sendToMotor, 3000, this.history, this.joystick);
+      //this.intervalID = setInterval(this.sendToMotor, 3000, this.history);
+    }*/
     //end of debugging
     // TODO: In einen Angular 2 Service schieben
     function ConnectComponent() {
@@ -32,38 +56,17 @@ var ConnectComponent = (function () {
         this.direction = document.getElementsByClassName('direction');
         this.distance = document.getElementsByClassName('distance');
     }
-    //start of debugging
-    ConnectComponent.prototype.init = function () {
-        this.helpEl[0].style.display = "none";
-        this.joystick = new VirtualJoystick({
-            mouseSupport: true,
-            stationaryBase: true,
-            direction: this.direction[0],
-            distance: this.distance[0],
-            baseX: 200,
-            baseY: 400,
-            limitStickTravel: true,
-            stickRadius: 50
-        });
-        var laufI;
-        for (laufI = 0; laufI < this.arrMan.length; laufI++) {
-            this.arrMan[laufI].style.display = "block";
-        }
-    };
     ConnectComponent.prototype.connect = function () {
         var _this = this;
         var i = 0;
         this.helpEl[0].style.display = "none";
-        this.loader[0].style.visibility = "visible";
+        this.loader[0].style.display = "block";
         this._ws = new WebSocket('ws://192.168.0.1:8080');
         //this._ws = new WebSocket('ws://192.168.178.50:8080');
-        var timeOut = setTimeout(function () {
-            document.getElementsByClassName('loader')[0].style.visibility = "hidden";
-            document.getElementsByClassName('error')[0].style.display = "block";
-        }, 3000);
+        var timeOut = setTimeout(this.timeOutConnect, 3000, this._ws, this.loader[0]);
         this._ws.onopen = function (event) {
             clearTimeout(timeOut);
-            _this.loader[0].style.visibility = "hidden";
+            _this.loader[0].style.display = "none";
             _this._ws.onmessage = function (event) {
                 _this.history.push('[SERVER] ' + event.data);
             };
@@ -72,14 +75,19 @@ var ConnectComponent = (function () {
             }
         };
     };
+    ConnectComponent.prototype.timeOutConnect = function (ws, loader) {
+        ws.close();
+        loader.style.display = "none";
+        document.getElementsByClassName('error')[0].style.display = "block";
+    };
     ConnectComponent.prototype.auto = function () {
         //if (!this.command) {
         //  return;
         //}
         //this.history.push('[CLIENT] ' + this.command);
         //this._ws.send(this.command);
-        this._ws.send('auto');
-        this.history.push('[CLIENT] ' + 'auto');
+        this._ws.send('automatik');
+        this.history.push('[CLIENT] ' + 'automatik');
         //this.command = '';
     };
     ConnectComponent.prototype.man = function () {
@@ -94,13 +102,9 @@ var ConnectComponent = (function () {
             limitStickTravel: true,
             stickRadius: 50
         });
-        //if (!this.command) {
-        //  return;
-        //}
-        //this.history.push('[CLIENT] ' + this.command);
-        //this._ws.send(this.command);
-        this._ws.send('manual');
-        this.history.push('[CLIENT] ' + 'manual');
+        this.intervalID = setInterval(this.sendToMotor, 500, this.history, this.joystick, this._ws);
+        this._ws.send('manuell');
+        this.history.push('[CLIENT] ' + 'manuell');
         //this.command = '';
         for (i = 0; i < this.arrChoose.length; i++) {
             this.arrChoose[i].style.display = "none";
@@ -108,23 +112,84 @@ var ConnectComponent = (function () {
         for (i = 0; i < this.arrMan.length; i++) {
             this.arrMan[i].style.display = "block";
         }
-        //this.joystick._container.addEventListener( 'mousemove'	, this.calculateDirection	, false );
-        //this.joystick.addEventListener('moved', this.calculateDirection(), false);
-        //while(1) {
-        //  (<HTMLElement>document.getElementById('debug1')).innerHTML = "Direction: " + this.joystick.calculateDirection();
-        //}
+        //(<HTMLElement>document.getElementById('debug1')).innerHTML = "Direction: " + this.joystick.calculateDirection();
+    };
+    ConnectComponent.prototype.sendToMotor = function (historyList, joyStick, webSocket) {
+        var message;
+        var dir = joyStick.getDirection();
+        var dist = joyStick.getDistance();
+        //Bereich von 0-90 abgedeckt durch 0-50 [JoyStick]
+        //prinzipiell also 1 : 9/5=1.8
+        //JoyStick Wertung in 5er Schritten:
+        //0-5   :  0=0x00; 6-10  : 18=0x12
+        //11-15 : 27=0x1B; 16-20 : 36=0x24
+        //21-25 : 45=0x2D; 26-30 : 54=0x36
+        //31-35 : 63=0x3F; 36-40 : 72=0x48
+        //41-45 : 81=0x51; 46-50 : 90=0x5A
+        var switch_dist = Math.ceil(dist / 5);
+        if (switch_dist == 1 || switch_dist == 0) {
+            dist = 0;
+        }
+        else {
+            dist = ((switch_dist * 5) * (1.8 * 10)) / 10;
+        }
+        if (dist == 0) {
+            var string_dist = '00';
+            var other_motor = '00';
+        }
+        else {
+            var string_dist = dist.toString(16).toUpperCase();
+            var calc_other_motor = Math.round(dist / 2);
+            var other_motor = calc_other_motor.toString(16).toUpperCase();
+        }
+        switch (dir) {
+            case 'Base':
+                message = '55-00-AA-00';
+                break;
+            case 'up':
+                message = '55-' + string_dist + '-AA-' + string_dist;
+                break;
+            case 'up-left':
+                message = '55-' + other_motor + '-AA-' + string_dist;
+                break;
+            case 'up-right':
+                message = '55-' + string_dist + '-AA-' + other_motor;
+                break;
+            case 'down':
+                message = 'AA-' + string_dist + '-55-' + string_dist;
+                break;
+            case 'down-left':
+                message = 'AA-' + other_motor + '-55-' + string_dist;
+                break;
+            case 'down-right':
+                message = 'AA-' + string_dist + '-55-' + other_motor;
+                break;
+            case 'left':
+                message = 'AA-' + string_dist + '-AA-' + string_dist;
+                break;
+            case 'right':
+                message = '55-' + string_dist + '-55-' + string_dist;
+                break;
+            default:
+                message = 'send something';
+                break;
+        }
+        webSocket.send(message);
+        //historyList.push('[CLIENT] ' + message);
     };
     ConnectComponent.prototype.back = function () {
         var i = 0;
+        clearInterval(this.intervalID);
         this.joystick.destroy();
-        this._ws.send('abbrManuell');
-        this.history.push('[CLIENT] ' + 'abbrManuell');
+        this._ws.send('STOP');
+        this.history.push('[CLIENT] ' + 'STOP');
         for (i = 0; i < this.arrMan.length; i++) {
             this.arrMan[i].style.display = "none";
         }
         for (i = 0; i < this.arrChoose.length; i++) {
             this.arrChoose[i].style.display = "block";
         }
+        //this.helpEl[0].style.display = "block";
     };
     ConnectComponent = __decorate([
         __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["_5" /* Component */])({
@@ -200,6 +265,7 @@ var ConsoleComponent = (function () {
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_platform_browser__ = __webpack_require__(102);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return GraphicsComponent; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -211,40 +277,31 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 
+
 var GraphicsComponent = (function () {
-    function GraphicsComponent() {
+    function GraphicsComponent(sanitizer) {
+        this.url = sanitizer.bypassSecurityTrustResourceUrl('http://192.168.0.1/www/html/index.html');
     }
     GraphicsComponent.prototype.ngAfterViewInit = function () {
-        var _this = this;
-        this.container = document.getElementById('container');
-        this.camera = new THREE.PerspectiveCamera(45, this.container.offsetWidth / this.container.offsetHeight, 1, 500);
-        this.camera.position.set(0, 0, 30);
-        this.scene = new THREE.Scene();
-        var textureLoader = new THREE.TextureLoader();
-        textureLoader.load('assets/earth.jpg', function (texture) {
-            var geometry = new THREE.SphereGeometry(5, 32, 32);
-            var material = new THREE.MeshLambertMaterial({ map: texture });
-            var sphere = new THREE.Mesh(geometry, material);
-            _this.scene.add(sphere);
-        });
-        this.renderer = new THREE.WebGLRenderer();
-        this.renderer.setPixelRatio(window.devicePixelRatio);
-        this.renderer.setSize(this.container.offsetWidth, this.container.offsetHeight);
-        this.renderer.setClearColor(0x000000);
-        var ambientLights = new THREE.AmbientLight(0x999999);
-        this.scene.add(ambientLights);
-        var spotLight = new THREE.PointLight(0xffffff);
-        spotLight.position.set(0, 0, 500);
-        this.scene.add(spotLight);
-        this.container.appendChild(this.renderer.domElement);
-        this.controls = new THREE.TrackballControls(this.camera);
-        this.animate();
+        //var ws = new WebSocket('ws://192.168.0.1:8080');
+        //ws.onopen = event => {
+        //  ws.onmessage = event => {
+        //    clearTimeout(timeOut);
+        document.getElementsByClassName('successFrame')[0].style.display = "block";
+        //    ws.close();
+        //  };
+        //  ws.send('test');
+        //  alert("set timeout");
+        //  var timeOut = setTimeout(this.errorHappened, 3000, ws, document);
+        //}
+        //ws.onerror = event => {
+        //  alert("onerror");
+        //  this.errorHappened(ws, document);
+        //}
     };
-    GraphicsComponent.prototype.animate = function () {
-        var _this = this;
-        window.requestAnimationFrame(function () { return _this.animate(); });
-        this.controls.update();
-        this.renderer.render(this.scene, this.camera);
+    GraphicsComponent.prototype.errorHappened = function (ws, document) {
+        document.getElementsByClassName('errorDiv')[0].style.display = "block";
+        ws.close();
     };
     GraphicsComponent = __decorate([
         __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["_5" /* Component */])({
@@ -252,9 +309,10 @@ var GraphicsComponent = (function () {
             template: __webpack_require__(671),
             styles: [__webpack_require__(666)]
         }), 
-        __metadata('design:paramtypes', [])
+        __metadata('design:paramtypes', [(typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__angular_platform_browser__["c" /* DomSanitizer */] !== 'undefined' && __WEBPACK_IMPORTED_MODULE_1__angular_platform_browser__["c" /* DomSanitizer */]) === 'function' && _a) || Object])
     ], GraphicsComponent);
     return GraphicsComponent;
+    var _a;
 }());
 //# sourceMappingURL=G:/Uni/Dobby/App/DobbyTransportsystem/DobbyV2/App/src/graphics.component.js.map
 
@@ -370,7 +428,7 @@ var AppComponent = (function () {
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__graphics_graphics_component__ = __webpack_require__(330);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__home_home_component__ = __webpack_require__(331);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__angular_platform_browser__ = __webpack_require__(147);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__angular_platform_browser__ = __webpack_require__(102);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__angular_core__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__angular_forms__ = __webpack_require__(465);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__angular_http__ = __webpack_require__(471);
@@ -495,7 +553,7 @@ module.exports = ".main-content {\r\n  margin: 0;\r\n  padding: 0;\r\n}\r\n"
 /***/ 664:
 /***/ (function(module, exports) {
 
-module.exports = "p {\r\n  text-align: center;\r\n}\r\n\r\n.btn-choose {\r\n  float: left;\r\n  margin: 5%;\r\n}\r\n\r\n.error {\r\n  display: none;\r\n}\r\n\r\n.manual {\r\n  display: none;\r\n}\r\n"
+module.exports = "p {\r\n  text-align: center;\r\n}\r\n\r\n.btn-choose {\r\n  float: left;\r\n  margin: 5%;\r\n}\r\n\r\n.error {\r\n  display: none;\r\n}\r\n\r\n.manual {\r\n  display: none;\r\n}\r\n\r\n.main {\r\n\twidth: 90%;\r\n\tmargin: 0 auto;\r\n\tposition: relative;\r\n}\r\n\r\n.bokeh {\r\n    font-size: 100px;\r\n    width: 1em;\r\n    height: 1em;\r\n    position: relative;\r\n    margin: 100px auto;\r\n    border-radius: 50%;\r\n    border: .01em solid rgba(150,150,150,0.1);\r\n    list-style: none;\r\n}\r\n\r\n.bokeh li {\r\n    position: absolute;\r\n    width: .2em;\r\n    height: .2em;\r\n    border-radius: 50%;\r\n}\r\n\r\n.bokeh li:nth-child(1) {\r\n    left: 50%;\r\n    top: 0;\r\n    margin: 0 0 0 -.1em;\r\n    background: #00C176;\r\n    -webkit-transform-origin: 50% 250%;\r\n    transform-origin: 50% 250%;\r\n    -webkit-animation:\r\n        rota 1.13s linear infinite,\r\n        opa 3.67s ease-in-out infinite alternate;\r\n    animation:\r\n        rota 1.13s linear infinite,\r\n        opa 3.67s ease-in-out infinite alternate;\r\n}\r\n\r\n.bokeh li:nth-child(2) {\r\n    top: 50%;\r\n    right: 0;\r\n    margin: -.1em 0 0 0;\r\n    background: #FF003C;\r\n    -webkit-transform-origin: -150% 50%;\r\n    transform-origin: -150% 50%;\r\n    -webkit-animation:\r\n        rota 1.86s linear infinite,\r\n        opa 4.29s ease-in-out infinite alternate;\r\n    animation:\r\n        rota 1.86s linear infinite,\r\n        opa 4.29s ease-in-out infinite alternate;\r\n}\r\n\r\n.bokeh li:nth-child(3) {\r\n    left: 50%;\r\n    bottom: 0;\r\n    margin: 0 0 0 -.1em;\r\n    background: #FABE28;\r\n    -webkit-transform-origin: 50% -150%;\r\n    transform-origin: 50% -150%;\r\n    -webkit-animation:\r\n        rota 1.45s linear infinite,\r\n        opa 5.12s ease-in-out infinite alternate;\r\n    animation:\r\n        rota 1.45s linear infinite,\r\n        opa 5.12s ease-in-out infinite alternate;\r\n}\r\n\r\n.bokeh li:nth-child(4) {\r\n    top: 50%;\r\n    left: 0;\r\n    margin: -.1em 0 0 0;\r\n    background: #88C100;\r\n    -webkit-transform-origin: 250% 50%;\r\n    transform-origin: 250% 50%;\r\n    -webkit-animation:\r\n        rota 1.72s linear infinite,\r\n        opa 5.25s ease-in-out infinite alternate;\r\n    animation:\r\n        rota 1.72s linear infinite,\r\n        opa 5.25s ease-in-out infinite alternate;\r\n}\r\n\r\n@-webkit-keyframes rota {\r\n    from { }\r\n    to { -webkit-transform: rotate(360deg); }\r\n}\r\n\r\n@keyframes rota {\r\n    from { }\r\n    to { -webkit-transform: rotate(360deg); transform: rotate(360deg); }\r\n}\r\n\r\n@-webkit-keyframes opa {\r\n    0% { }\r\n    12.0% { opacity: 0.80; }\r\n    19.5% { opacity: 0.88; }\r\n    37.2% { opacity: 0.64; }\r\n    40.5% { opacity: 0.52; }\r\n    52.7% { opacity: 0.69; }\r\n    60.2% { opacity: 0.60; }\r\n    66.6% { opacity: 0.52; }\r\n    70.0% { opacity: 0.63; }\r\n    79.9% { opacity: 0.60; }\r\n    84.2% { opacity: 0.75; }\r\n    91.0% { opacity: 0.87; }\r\n}\r\n\r\n@keyframes opa {\r\n    0% { }\r\n    12.0% { opacity: 0.80; }\r\n    19.5% { opacity: 0.88; }\r\n    37.2% { opacity: 0.64; }\r\n    40.5% { opacity: 0.52; }\r\n    52.7% { opacity: 0.69; }\r\n    60.2% { opacity: 0.60; }\r\n    66.6% { opacity: 0.52; }\r\n    70.0% { opacity: 0.63; }\r\n    79.9% { opacity: 0.60; }\r\n    84.2% { opacity: 0.75; }\r\n    91.0% { opacity: 0.87; }\r\n}\r\n"
 
 /***/ }),
 
@@ -530,7 +588,7 @@ module.exports = "<div class=\"container main-content\">\n  <nav class=\"navbar 
 /***/ 669:
 /***/ (function(module, exports) {
 
-module.exports = "<!--<button type=\"button\" class=\"btn btn-prim btn-primary\" (click)=\"connect()\">Connect</button>-->\r\n<!--<button type=\"button\" class=\"btn btn-prim\" (click)=\"connect()\">Connect</button>-->\r\n<button type=\"button\" class=\"btn btn-prim\" (click)=\"init()\">Debug Init</button>\r\n\r\n<p class=\"hidden\" style=\"\">W&auml;hlen Sie den Fahr-Modus:</p>\r\n<!--<input type=\"text\" class=\"hidden\" placeholder=\"Kommando\" [(ngModel)]=\"command\">-->\r\n<button type=\"button\" class=\"btn btn-choose hidden\" (click)=\"auto()\">Automatik</button>\r\n<button type=\"button\" class=\"btn btn-choose hidden\" (click)=\"man()\">Manuell</button>\r\n\r\n<img src=\"../../assets/ajax-loader.gif\" class=\"loader\" alt=\"Loading...\" style=\"visibility:hidden\">\r\n<p class=\"error\">ERROR: Failed to Connect to the WebSocket Server!</p>\r\n\r\n<ul>\r\n  <li *ngFor=\"let h of history\">{{ h }}</li>\r\n</ul>\r\n\r\n<!--<p class=\"hidden\">\r\n  X: <p id=\"textView1\"></p>\r\n  Y: <p id=\"textView2\"></p>\r\n  Angle: <p id=\"textView3\"></p>\r\n  Distance: <p id=\"textView4\"></p>\r\n  Direction: <p id=\"textView5\"></p>\r\n</p>-->\r\n\r\n<!--<img class=\"img_joystick hidden\" width=\"350dp\" height=\"350dp\" src=\"../../assets/image_button_bg.png\" />-->\r\n\r\n<div id=\"debug1\" class=\"manual direction\" style=\"position:fixed; left:5%; top:30%; color:grey;\">\r\n  Direction: Base\r\n</div>\r\n\r\n<div id=\"debug2\" class=\"manual distance\" style=\"position:fixed; left:5%; top:34%; color:grey;\">\r\n  Distance: 0\r\n</div>\r\n\r\n<!--<button type=\"button\" class=\"btn manual\" (click)=\"back()\">Zur&uuml;ck</button>-->\r\n"
+module.exports = "<!--<button type=\"button\" class=\"btn btn-prim btn-primary\" (click)=\"connect()\">Connect</button>-->\r\n<button type=\"button\" class=\"btn btn-prim\" (click)=\"connect()\">Connect</button>\r\n<!--<button type=\"button\" class=\"btn btn-prim\" (click)=\"init()\">Debug Init</button>-->\r\n\r\n<p class=\"hidden\" style=\"\">W&auml;hlen Sie den Fahr-Modus:</p>\r\n<!--<input type=\"text\" class=\"hidden\" placeholder=\"Kommando\" [(ngModel)]=\"command\">-->\r\n<button type=\"button\" class=\"btn btn-choose hidden\" (click)=\"auto()\">Automatik</button>\r\n<button type=\"button\" class=\"btn btn-choose hidden\" (click)=\"man()\">Manuell</button>\r\n\r\n\r\n<section class=\"main loader\" style=\"display:none\">\r\n  <!-- the loading animation -->\r\n  <ul class=\"bokeh\">\r\n    <li></li>\r\n    <li></li>\r\n    <li></li>\r\n    <li></li>\r\n  </ul>\r\n</section>\r\n\r\n<p class=\"error\">ERROR: Failed to Connect to the WebSocket Server!</p>\r\n\r\n<!--<p class=\"hidden\">\r\n  X: <p id=\"textView1\"></p>\r\n  Y: <p id=\"textView2\"></p>\r\n  Angle: <p id=\"textView3\"></p>\r\n  Distance: <p id=\"textView4\"></p>\r\n  Direction: <p id=\"textView5\"></p>\r\n</p>-->\r\n\r\n<div id=\"debug1\" class=\"manual direction\" style=\"position:fixed; left:5%; top:30%; color:grey;\">\r\n  Direction: Base\r\n</div>\r\n\r\n<div id=\"debug2\" class=\"manual distance\" style=\"position:fixed; left:5%; top:34%; color:grey;\">\r\n  Distance: 0\r\n</div>\r\n\r\n<button type=\"button\" class=\"btn manual\" (click)=\"back()\">Zur&uuml;ck</button>\r\n\r\n<ul>\r\n  <li *ngFor=\"let h of history\">{{ h }}</li>\r\n</ul>\r\n"
 
 /***/ }),
 
@@ -544,7 +602,7 @@ module.exports = "<h2>Todo</h2>\n<ol>\n  <li>Verbindung zum Raspi aufbauen</li>\
 /***/ 671:
 /***/ (function(module, exports) {
 
-module.exports = "<div id=\"container\" style=\"width: 100%; height: 400px\"></div>\n"
+module.exports = "<!--<div id=\"container\" style=\"width: 100%; height: 400px\"></div>-->\n<!--<div ng-include=\"'http://192.168.0.1/html/index.html'\"></div>-->\n<!--<iframe class=\"successFrame\" src=\"http://192.168.0.1/html/index.html\" frameborder=\"0\" width=\"100%\" height=\"400px\" style=\"display: none\"></iframe>-->\n<iframe class=\"successFrame\" [src]=\"url\" frameborder=\"0\" width=\"100%\" height=\"400px\" style=\"display: none\"></iframe>\n<div class=\"errorDiv\" id=\"container\" style=\"display: none\">Fehler: die Verbindung zu Dobby steht offenbar nicht. Sind Sie mit der WLAN-Schnittstelle verbunden?</div>\n"
 
 /***/ }),
 
@@ -591,6 +649,9 @@ var VirtualJoystick	= function(opts)
 		this._baseEl.style.display	= "";
 		this._baseEl.style.left		= (this._baseX - this._baseEl.width /2)+"px";
 		this._baseEl.style.top		= (this._baseY - this._baseEl.height/2)+"px";
+		this._stickEl.style.display = "";
+		this._stickEl.style.left  = (this._baseX - this._stickEl.width/2)+"px";
+		this._stickEl.style.top   = (this._baseY - this._stickEl.height/2)+"px";
 	}
 
 	this._transform	= this._useCssTransform ? this._getTransformProperty() : false;
@@ -737,9 +798,13 @@ VirtualJoystick.prototype.left	= function(deltaX, deltaY){
 VirtualJoystick.prototype._onUp	= function()
 {
 	this._pressed	= false;
-	this._stickEl.style.display	= "none";
+	//this._stickEl.style.display	= "none";
+	this._move(this._stickEl.style, (this._baseX - this._stickEl.width / 2), (this._baseY - this._stickEl.height / 2));
+	//style display in center
 	if (this._direction != false)	this._direction.innerHTML = "Direction: Base";
 	if (this._distance != false) this._distance.innerHTML = "Distance: 0";
+	this._stickX	= this._baseX;
+	this._stickY	= this._baseY;
 
 	if(this._stationaryBase == false){
 		this._baseEl.style.display	= "none";
@@ -775,7 +840,8 @@ VirtualJoystick.prototype._onDown	= function(x, y)
 		}
 	}
 
-	this._stickEl.style.display	= "";
+	//this._stickEl.style.display	= "";
+	//style display
 	this._move(this._stickEl.style, (this._stickX - this._stickEl.width /2), (this._stickY - this._stickEl.height/2));
 }
 
@@ -800,6 +866,47 @@ VirtualJoystick.prototype._onMove	= function(x, y)
     this._calculateDirection();
     this._move(this._stickEl.style, (this._stickX - this._stickEl.width /2), (this._stickY - this._stickEl.height/2));
 	}
+}
+
+VirtualJoystick.prototype.getDirection = function() {
+  var dir = 'Base';
+
+  //if( this._pressed === false )	return false;
+  var deltaX	= this.deltaX();
+  var deltaY	= this.deltaY();
+
+  if ( this.up(deltaX, deltaY) ) {            //so the stick is somewhere in the upper part
+    if ( this.left(deltaX, deltaY) ) {        //so the stick is "up left"
+      dir = 'up-left';
+    } else if ( this.right(deltaX, deltaY) ) {//so the stick is "up right"
+      dir = 'up-right';
+    } else {                                  //so the stick is "up"
+      dir = 'up';
+    }
+  } else if ( this.down(deltaX, deltaY) ) {   //so the stick is somewhere in the lower part
+    if ( this.left(deltaX, deltaY) ) {        //so the stick is "down left"
+        dir = 'down-left';
+      } else if ( this.right(deltaX, deltaY) ) {//so the stick is "down right"
+        dir = 'down-right';
+      } else {                                  //so the stick is "down"
+      dir = 'down';
+    }
+  } else if ( this.left(deltaX, deltaY) ) {   //so the stick is "left"
+    dir = 'left';
+  } else if ( this.right(deltaX, deltaY) ) {  //so the stick is "right"
+    dir = 'right';
+  }                                           //if nothing is fitting for the direction, this means
+                                              //either something went horribly wrong
+                                              //or the stick is in default position
+  return dir;
+}
+
+VirtualJoystick.prototype.getDistance = function() {
+  var deltaX	= this.deltaX();
+  var deltaY	= this.deltaY();
+  var stickDistance = Math.sqrt( (deltaX * deltaX) + (deltaY * deltaY) );
+  stickDistance = Math.round(stickDistance);
+  return stickDistance;
 }
 
 VirtualJoystick.prototype._calculateDirection = function() {
@@ -841,7 +948,7 @@ VirtualJoystick.prototype._calculateDirection = function() {
     this._distance.innerHTML = "Distance: " + Math.round(stickDistance);
   }
 
-  return dir;
+  //return dir;
   //(<HTMLElement>document.getElementById('debug1')).innerHTML = "Direction: " + dir;
 }
 
@@ -956,18 +1063,24 @@ VirtualJoystick.prototype._buildJoystickBase	= function()
 	canvas.height	= 126;
 
 	var ctx		= canvas.getContext('2d');
-	ctx.beginPath();
-	ctx.strokeStyle = this._strokeStyle;
-	ctx.lineWidth	= 6;
-	ctx.arc( canvas.width/2, canvas.width/2, 40, 0, Math.PI*2, true);
-	ctx.stroke();
+	var base_image = new Image();
+	base_image.onload = function() {
+	  ctx.drawImage(base_image,0,0,canvas.width,canvas.height);
+	}
+	base_image.onerror = function() {
+	  ctx.beginPath();
+    ctx.strokeStyle = this._strokeStyle;
+    ctx.lineWidth	= 6;
+    ctx.arc( canvas.width/2, canvas.width/2, 40, 0, Math.PI*2, true);
+    ctx.stroke();
 
-	ctx.beginPath();
-	ctx.strokeStyle	= this._strokeStyle;
-	ctx.lineWidth	= 2;
-	ctx.arc( canvas.width/2, canvas.width/2, 60, 0, Math.PI*2, true);
-	ctx.stroke();
-
+    ctx.beginPath();
+    ctx.strokeStyle	= this._strokeStyle;
+    ctx.lineWidth	= 2;
+    ctx.arc( canvas.width/2, canvas.width/2, 60, 0, Math.PI*2, true);
+    ctx.stroke();
+	}
+	base_image.src = '/assets/image_button_bg.png';
 	return canvas;
 }
 
@@ -980,11 +1093,19 @@ VirtualJoystick.prototype._buildJoystickStick	= function()
 	canvas.width	= 86;
 	canvas.height	= 86;
 	var ctx		= canvas.getContext('2d');
-	ctx.beginPath();
-	ctx.strokeStyle	= this._strokeStyle;
-	ctx.lineWidth	= 6;
-	ctx.arc( canvas.width/2, canvas.width/2, 40, 0, Math.PI*2, true);
-	ctx.stroke();
+
+	var stick_image = new Image();
+  stick_image.onload = function() {
+    ctx.drawImage(stick_image,0,0,canvas.width,canvas.height);
+  }
+  stick_image.onerror = function() {
+    ctx.beginPath();
+    ctx.strokeStyle	= this._strokeStyle;
+    ctx.lineWidth	= 6;
+    ctx.arc( canvas.width/2, canvas.width/2, 40, 0, Math.PI*2, true);
+    ctx.stroke();
+  }
+  stick_image.src = '/assets/image_button.png';
 	return canvas;
 }
 
@@ -998,17 +1119,13 @@ VirtualJoystick.prototype._move = function(style, x, y)
 	if (this._transform) {
 		if (this._has3d) {
 			style[this._transform] = 'translate3d(' + x + 'px,' + y + 'px, 0)';
-			//this._calculateDirection();
 		} else {
 			style[this._transform] = 'translate(' + x + 'px,' + y + 'px)';
-			//this._calculateDirection();
 		}
 	} else {
 		style.left = x + 'px';
 		style.top = y + 'px';
-		//this._calculateDirection();
 	}
-	//this._calculateDirection();
 }
 
 VirtualJoystick.prototype._getTransformProperty = function()
