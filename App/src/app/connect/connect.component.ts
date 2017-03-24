@@ -58,20 +58,16 @@ export class ConnectComponent {
     var i = 0;
 
     this.helpEl[0].style.display = "none";
-    this.loader[0].style.visibility = "visible";
+    this.loader[0].style.display = "block";
 
     this._ws = new WebSocket('ws://192.168.0.1:8080');
     //this._ws = new WebSocket('ws://192.168.178.50:8080');
 
-    var timeOut = setTimeout( function () {
-      this._ws.close();
-      (<HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('loader'))[0].style.visibility = "hidden";
-      (<HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('error'))[0].style.display = "block";
-    }, 3000);
+    var timeOut = setTimeout(this.timeOutConnect, 3000, this._ws, this.loader[0]);
 
     this._ws.onopen = event => {
       clearTimeout(timeOut);
-      this.loader[0].style.visibility = "hidden";
+      this.loader[0].style.display = "none";
 
       this._ws.onmessage = event => {
         this.history.push('[SERVER] ' + event.data);
@@ -81,6 +77,12 @@ export class ConnectComponent {
         this.arrChoose[i].style.display = "block";
       }
     }
+  }
+
+  public timeOutConnect(ws,loader) {
+    ws.close();
+    loader.style.display = "none";
+    (<HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('error'))[0].style.display = "block";
   }
 
   public auto() {

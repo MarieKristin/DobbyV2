@@ -7,7 +7,17 @@
 <button type="button" class="btn btn-choose hidden" (click)="auto()">Automatik</button>
 <button type="button" class="btn btn-choose hidden" (click)="man()">Manuell</button>
 
-<img src="../../assets/ajax-loader.gif" class="loader" alt="Loading..." style="visibility:hidden">
+
+<section class="main loader" style="display:none">
+  <!-- the loading animation -->
+  <ul class="bokeh">
+    <li></li>
+    <li></li>
+    <li></li>
+    <li></li>
+  </ul>
+</section>
+
 <p class="error">ERROR: Failed to Connect to the WebSocket Server!</p>
 
 <!--<p class="hidden">
