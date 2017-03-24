@@ -9,6 +9,7 @@ import {SafeResourceUrl, DomSanitizer} from '@angular/platform-browser';
 })
 export class GraphicsComponent implements AfterViewInit {
   url: SafeResourceUrl;
+  private loader: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('loader');
 
   constructor(sanitizer: DomSanitizer) {
     this.url = sanitizer.bypassSecurityTrustResourceUrl('http://192.168.0.1/www/html/index.html');
@@ -20,6 +21,7 @@ export class GraphicsComponent implements AfterViewInit {
     ws.onopen = event => {
       ws.onmessage = event => {
         clearTimeout(timeOut);
+        this.loader[0].style.display = "none";
         (<HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('successFrame'))[0].style.display = "block";
         ws.close();
       };
@@ -34,6 +36,7 @@ export class GraphicsComponent implements AfterViewInit {
   }
 
   public errorHappened(ws, document) {
+    this.loader[0].style.display = "none";
     (<HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('errorDiv'))[0].style.display = "block";
     ws.close();
   }

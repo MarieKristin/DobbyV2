@@ -7,6 +7,18 @@
 
 <button type="button" id="btn-primary" class="btn btn-primary" (click)="connect()">Connect</button>
 
+<section class="loader" style="display:none">
+  <!-- the loading animation -->
+  <ul class="bokeh">
+    <li></li>
+    <li></li>
+    <li></li>
+    <li></li>
+  </ul>
+</section>
+
+<p class="error" style="display:none">ERROR: Failed to Connect to the WebSocket Server!</p>
+
 <input type="text" class="hidden" placeholder="Kommando" [(ngModel)]="command">
 <button type="button" class="btn hidden" (click)="send()">Senden</button>
 
