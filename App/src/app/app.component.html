@@ -17,10 +17,10 @@
   </nav>-->
   <nav class="menu" id="navMenu">
     <h3>Menü</h3>
-    <a [routerLink]="['/home']" (click)="menuClicked()">Home</a>
-    <a [routerLink]="['/connect']" (click)="menuClicked()">Steuern</a>
-    <a [routerLink]="['/console']" (click)="menuClicked()">Konsole</a>
-    <a [routerLink]="['/graphics']" (click)="menuClicked()">3D</a>
+    <a [routerLink]="['/home']" (click)="menuLinkClicked(0)" class="linkEl">Home</a>
+    <a [routerLink]="['/connect']" (click)="menuLinkClicked(1)" class="linkEl">Steuern</a>
+    <a [routerLink]="['/console']" (click)="menuLinkClicked(2)" class="linkEl">Konsole</a>
+    <a [routerLink]="['/graphics']" (click)="menuLinkClicked(3)" class="linkEl">3D</a>
     <a (click)="menuClicked()">Close</a>
   </nav>
   <button id="showMenu" class="menuButton" (click)="menuClicked()">Menü</button>

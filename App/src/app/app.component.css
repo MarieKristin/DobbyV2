@@ -40,9 +40,10 @@
   cursor: pointer;
 }
 
-.menu a:hover {
+/*.menu a:hover*/
+.menuActive {
   background: #258ecd;
-  text-decoration: none;
+  /*text-decoration: none;*/
 }
 
 .menu a:active {
