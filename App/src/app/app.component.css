@@ -2,3 +2,59 @@
   margin: 0;
   padding: 0;
 }
+
+.menu {
+  background: #47a3da;
+  position: fixed;
+  width: 240px;
+  height: 100%;
+  top: 0;
+  z-index: 1000;
+  left: -240px;
+  -webkit-transition: all 0.3s ease;
+  -moz-transition: all 0.3s ease;
+  transition: all 0.3s ease;
+}
+
+.menu.open {
+  left: 0px;
+}
+
+.menu h3 {
+  color: #afdefa;
+  font-size: 1.9em;
+  padding: 20px;
+  margin: 0;
+  font-weight: 300;
+  background: #0d77b6;
+}
+
+.menu a {
+  display: block;
+  color: #fff;
+  font-size: 1.1em;
+  font-weight: 300;
+  border-bottom: 1px solid #258ecd;
+  padding: 1em;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.menu a:hover {
+  background: #258ecd;
+  text-decoration: none;
+}
+
+.menu a:active {
+  background: #afdefa;
+  color: #47a3da;
+  text-decoration: none;
+}
+
+@media screen and (max-height: 26.375em) {
+  .menu {
+    font-size: 90%;
+    width: 190px;
+    left: -190px;
+  }
+}

@@ -48,7 +48,7 @@
     position: relative;
     margin: 100px auto;
     border-radius: 50%;
-    border: .01em solid rgba(150,150,150,0.1);
+    /*border: .01em solid rgba(150,150,150,0.1);*/
     list-style: none;
 }
 
