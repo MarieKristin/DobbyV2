@@ -34,7 +34,8 @@ export class ConsoleComponent {
       this.loader[0].style.display = "none";
 
       this._ws.onmessage = event => {
-        this.history.push(event.data);
+        var jsonData = JSON.parse(event.data);
+        this.history.push(jsonData.Message);
         setTimeout(this.updateScroll, 100, this.console[0]);
       };
 
