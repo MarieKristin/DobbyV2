@@ -1,1 +1,32 @@
+.cmdWindow {
+  background: #000;
+  border: 3px groove #ccc;
+  color: #ccc;
+  padding: 5px;
+  width: 80%;
+  height: 250px;
+  position: absolute;
+  left: 10%;
+  top: 150px;
+  font-size: 8pt;
+  overflow-y: scroll;
+  display: none;
+}
 
+.cmdList {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  /*height: 100%;*/
+}
+
+#inSend {
+  position: absolute;
+  top: 65%;
+}
+
+#btnSend {
+  position: absolute;
+  top: 70%;
+}

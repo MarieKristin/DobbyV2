@@ -16,6 +16,7 @@ export class ConsoleComponent {
   private helpArr: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('hidden');
   private helpEl: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('btn-primary');
   private loader: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('loader');
+  private console: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('cmdWindow');
 
   // TODO: In einen Angular 2 Service schieben
   constructor() {  }
@@ -33,12 +34,14 @@ export class ConsoleComponent {
       this.loader[0].style.display = "none";
 
       this._ws.onmessage = event => {
-        this.history.push('[SERVER] ' + event.data);
+        this.history.push(event.data);
+        setTimeout(this.updateScroll, 100, this.console[0]);
       };
 
       for (var i=0; i< this.helpArr.length; i++) {
         this.helpArr[i].style.display = "block";
       }
+      this.console[0].style.display = "block";
      }
   }
 
@@ -46,15 +49,23 @@ export class ConsoleComponent {
       ws.close();
       loader.style.display = "none";
       (<HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('error'))[0].style.display = "block";
+  }
+
+  public updateScroll(console) {
+    //calculate how much the div needs to be scrolled
+    var scrollHeight = console.scrollHeight;
+    var height = console.clientHeight;
+    var topCoord = console.scrollTop;
+    if(topCoord<(scrollHeight-height)) {
+      console.scrollTop += (scrollHeight-topCoord);
     }
+  }
 
   public send() {
     if (!this.command) {
       return;
     }
-
-    this.history.push('[CLIENT] ' + this.command);
-
+    this.history.push('>' + this.command);
     this._ws.send(this.command);
 
     this.command = '';

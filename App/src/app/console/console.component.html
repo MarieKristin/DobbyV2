@@ -10,11 +10,13 @@
   </ul>
 </section>
 
-<p class="error" style="display:none">ERROR: Failed to Connect to the WebSocket Server!</p>
+<p class="error" style="display:none">ERROR: Verbindung zum WebSocket Server fehlgeschlagen! Sind Sie mit der WLAN Schnittstelle verbunden?</p>
 
-<input type="text" class="hidden" placeholder="Kommando" [(ngModel)]="command">
-<button type="button" class="btn hidden" (click)="send()">Senden</button>
+<div class="cmdWindow">
+  <ul class="cmdList">
+    <li class="cmdItem" *ngFor="let h of history">{{ h }}</li>
+  </ul>
+</div>
 
-<ul>
-  <li *ngFor="let h of history">{{ h }}</li>
-</ul>
+<input type="text" id="inSend" class="hidden" placeholder="Kommando" [(ngModel)]="command">
+<button type="button" id="btnSend" class="btn hidden" (click)="send()">Senden</button>

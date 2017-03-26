@@ -11,6 +11,7 @@
     <file url="file://$PROJECT_DIR$/App/src/app/connect/connect.component.html" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/App/src/app/connect/connect.component.spec.ts" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/App/src/app/connect/connect.component.ts" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/App/src/app/console/console.component.css" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/App/src/app/console/console.component.html" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/App/src/app/console/console.component.ts" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/App/src/app/graphics/graphics.component.html" charset="UTF-8" />
