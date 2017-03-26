@@ -63,7 +63,7 @@ char *notification;
 gboolean opt_no_daemon = FALSE;
 gboolean exit_loop = FALSE;
 gboolean send_notification = FALSE;
-gint port = 8080;
+gint port = 2609;
 int signal_id = 0;
 GOptionContext *option_context = NULL;
 gint exit_value = EXIT_SUCCESS;
@@ -141,6 +141,10 @@ unsigned int manuelleMotorroutine(struct libwebsocket *wsi, unsigned char *data,
 }
 
 
+
+
+
+
 /* ***************************************** */
 /* Antwortnachricht vorbereiten */
 /* ***************************************** */
@@ -154,21 +158,23 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	int ausgefuehrt = 0;
 	asprintf(&reply, "You typed \"%s\"", data);				// Füge zu den eigegebenen Daten "you typed" hinzu und schreibe in reply
 
-	string lampe = "manuell";
-	int test = s_data.compare(lampe); 					// Vergleiche ob das eigegebene Wort dem Wert von "lampe" entspricht
+	string manuell = "manuell";
+	int test = s_data.compare(manuell); 					// Vergleiche ob das eigegebene Wort dem Wert von "lampe" entspricht
 	if (test == 0) {
 		manuellerModus = true;
 	}
-	test = 7; 								// == 0 ? -> ist gleich
-	string weiss = "TestW";
-	test = s_data.compare(weiss);
+	test = 7; 
+	string automatik = "automatik";							// == 0 ? -> ist gleich
+	test = s_data.compare(automatik);
 	if (test == 0) {
+		system("/etc/init.d/livestream.sh start &");
 		ioControl->blinken(27, 200);
 	}
 	test = 7;
-	string rot = "TestR";
-	test = s_data.compare(rot);
+	string manuStop = "STOP";
+	test = s_data.compare(manuStop);
 	if (test == 0) {
+		system("/etc/init.d/livestream.sh stop &");
 		ioControl->blinken(23, 200);
 	}
 	test = 7;
