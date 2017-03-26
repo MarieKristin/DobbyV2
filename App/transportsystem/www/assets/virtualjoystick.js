@@ -462,7 +462,7 @@ VirtualJoystick.prototype._buildJoystickBase	= function()
     ctx.arc( canvas.width/2, canvas.width/2, 60, 0, Math.PI*2, true);
     ctx.stroke();
 	}
-	base_image.src = '/assets/image_button_bg.png';
+	base_image.src = 'assets/image_button_bg.png';
 	return canvas;
 }
 
@@ -487,7 +487,7 @@ VirtualJoystick.prototype._buildJoystickStick	= function()
     ctx.arc( canvas.width/2, canvas.width/2, 40, 0, Math.PI*2, true);
     ctx.stroke();
   }
-  stick_image.src = '/assets/image_button.png';
+  stick_image.src = 'assets/image_button.png';
 	return canvas;
 }
 

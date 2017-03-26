@@ -113,7 +113,7 @@ export class ConnectComponent {
       stickRadius: 90
     });
 
-    this.intervalID = setInterval(this.sendToMotor, 500, this.history, this.joystick, this._ws);
+    this.intervalID = setInterval(this.sendToMotor, 400, this.history, this.joystick, this._ws);
 
     this._ws.send('manuell');
     this.history.push('[CLIENT] ' + 'manuell');
