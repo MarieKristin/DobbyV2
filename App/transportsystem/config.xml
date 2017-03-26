@@ -33,5 +33,7 @@
         <variable name="XWALK_MULTIPLEAPK" value="true" />
     </plugin>
     <plugin name="cordova-plugin-whitelist" spec="~1.3.0" />
-	<allow-navigation href="http://192.168.0.1/www/html/index.html" />
+	<allow-navigation href="http://192.168.0.1/modell/index.html" />
+	<allow-navigation href="http://192.168.0.1:2209" />
+	<allow-navigation href="http://192.168.0.1:2209/livestream.html" />
 </widget>

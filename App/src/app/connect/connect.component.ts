@@ -100,15 +100,17 @@ export class ConnectComponent {
 
   public man() {
     var i = 0;
+    var joyStickDiv = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('joyStickDiv');
     this.joystick = new VirtualJoystick({
+      container: joyStickDiv[0],
       mouseSupport: true,
       stationaryBase: true,
       direction: this.direction[0],
       distance: this.distance[0],
-      baseX: 200,
-      baseY: 400,
+      baseX: 175,
+      baseY: 350,
       limitStickTravel: true,
-      stickRadius: 50
+      stickRadius: 90
     });
 
     this.intervalID = setInterval(this.sendToMotor, 500, this.history, this.joystick, this._ws);
@@ -131,20 +133,20 @@ export class ConnectComponent {
     var dir = joyStick.getDirection();
     var dist = joyStick.getDistance();
 
-    //Bereich von 0-90 abgedeckt durch 0-50 [JoyStick]
-    //prinzipiell also 1 : 9/5=1.8
+    //Bereich von 0-90 abgedeckt durch 0-90 [JoyStick]
+    //prinzipiell also 1 : 9/9=1
     //JoyStick Wertung in 5er Schritten:
-    //0-5   :  0=0x00; 6-10  : 18=0x12
-    //11-15 : 27=0x1B; 16-20 : 36=0x24
-    //21-25 : 45=0x2D; 26-30 : 54=0x36
-    //31-35 : 63=0x3F; 36-40 : 72=0x48
-    //41-45 : 81=0x51; 46-50 : 90=0x5A
+    //0-9   :  0=0x00; 10-18 : 18=0x12
+    //19-27 : 27=0x1B; 28-36 : 36=0x24
+    //37-45 : 45=0x2D; 46-54 : 54=0x36
+    //55-63 : 63=0x3F; 64-72 : 72=0x48
+    //73-81 : 81=0x51; 82-90 : 90=0x5A
 
-    var switch_dist = Math.ceil(dist/5);
+    var switch_dist = Math.ceil(dist/9);
     if(switch_dist == 1 || switch_dist == 0) {
       dist = 0;
     } else {
-      dist = ((switch_dist*5)*(1.8*10))/10;
+      dist = (switch_dist*90)/10;
     }
 
     if(dist == 0) {
@@ -158,31 +160,31 @@ export class ConnectComponent {
 
     switch(dir) {
       case 'Base':
-        message = '55-00-AA-00';
+        message = 'AA-00-55-00';
         break;
       case 'up':
-        message = '55-' + string_dist + '-AA-' + string_dist;
-        break;
-      case 'up-left':
-        message = '55-' + other_motor + '-AA-' + string_dist;
-        break;
-      case 'up-right':
-        message = '55-' + string_dist + '-AA-' + other_motor;
-        break;
-      case 'down':
         message = 'AA-' + string_dist + '-55-' + string_dist;
         break;
-      case 'down-left':
+      case 'up-left':
         message = 'AA-' + other_motor + '-55-' + string_dist;
         break;
-      case 'down-right':
+      case 'up-right':
         message = 'AA-' + string_dist + '-55-' + other_motor;
         break;
+      case 'down':
+        message = '55-' + string_dist + '-AA-' + string_dist;
+        break;
+      case 'down-left':
+        message = '55-' + other_motor + '-AA-' + string_dist;
+        break;
+      case 'down-right':
+        message = '55-' + string_dist + '-AA-' + other_motor;
+        break;
       case 'left':
-        message = 'AA-' + string_dist + '-AA-' + string_dist;
+        message = '55-' + string_dist + '-55-' + string_dist;
         break;
       case 'right':
-        message = '55-' + string_dist + '-55-' + string_dist;
+        message = 'AA-' + string_dist + '-AA-' + string_dist;
         break;
       default:
         message = 'send something';

@@ -61,8 +61,7 @@ var ConnectComponent = (function () {
         var i = 0;
         this.helpEl[0].style.display = "none";
         this.loader[0].style.display = "block";
-        this._ws = new WebSocket('ws://192.168.0.1:8080');
-        //this._ws = new WebSocket('ws://192.168.178.50:8080');
+        this._ws = new WebSocket('ws://192.168.0.1:2609');
         var timeOut = setTimeout(this.timeOutConnect, 3000, this._ws, this.loader[0]);
         this._ws.onopen = function (event) {
             clearTimeout(timeOut);
@@ -92,15 +91,17 @@ var ConnectComponent = (function () {
     };
     ConnectComponent.prototype.man = function () {
         var i = 0;
+        var joyStickDiv = document.getElementsByClassName('joyStickDiv');
         this.joystick = new VirtualJoystick({
+            container: joyStickDiv[0],
             mouseSupport: true,
             stationaryBase: true,
             direction: this.direction[0],
             distance: this.distance[0],
-            baseX: 200,
-            baseY: 400,
+            baseX: 175,
+            baseY: 350,
             limitStickTravel: true,
-            stickRadius: 50
+            stickRadius: 90
         });
         this.intervalID = setInterval(this.sendToMotor, 500, this.history, this.joystick, this._ws);
         this._ws.send('manuell');
@@ -118,20 +119,20 @@ var ConnectComponent = (function () {
         var message;
         var dir = joyStick.getDirection();
         var dist = joyStick.getDistance();
-        //Bereich von 0-90 abgedeckt durch 0-50 [JoyStick]
-        //prinzipiell also 1 : 9/5=1.8
+        //Bereich von 0-90 abgedeckt durch 0-90 [JoyStick]
+        //prinzipiell also 1 : 9/9=1
         //JoyStick Wertung in 5er Schritten:
-        //0-5   :  0=0x00; 6-10  : 18=0x12
-        //11-15 : 27=0x1B; 16-20 : 36=0x24
-        //21-25 : 45=0x2D; 26-30 : 54=0x36
-        //31-35 : 63=0x3F; 36-40 : 72=0x48
-        //41-45 : 81=0x51; 46-50 : 90=0x5A
-        var switch_dist = Math.ceil(dist / 5);
+        //0-9   :  0=0x00; 10-18 : 18=0x12
+        //19-27 : 27=0x1B; 28-36 : 36=0x24
+        //37-45 : 45=0x2D; 46-54 : 54=0x36
+        //55-63 : 63=0x3F; 64-72 : 72=0x48
+        //73-81 : 81=0x51; 82-90 : 90=0x5A
+        var switch_dist = Math.ceil(dist / 9);
         if (switch_dist == 1 || switch_dist == 0) {
             dist = 0;
         }
         else {
-            dist = ((switch_dist * 5) * (1.8 * 10)) / 10;
+            dist = (switch_dist * 90) / 10;
         }
         if (dist == 0) {
             var string_dist = '00';
@@ -144,31 +145,31 @@ var ConnectComponent = (function () {
         }
         switch (dir) {
             case 'Base':
-                message = '55-00-AA-00';
+                message = 'AA-00-55-00';
                 break;
             case 'up':
-                message = '55-' + string_dist + '-AA-' + string_dist;
-                break;
-            case 'up-left':
-                message = '55-' + other_motor + '-AA-' + string_dist;
-                break;
-            case 'up-right':
-                message = '55-' + string_dist + '-AA-' + other_motor;
-                break;
-            case 'down':
                 message = 'AA-' + string_dist + '-55-' + string_dist;
                 break;
-            case 'down-left':
+            case 'up-left':
                 message = 'AA-' + other_motor + '-55-' + string_dist;
                 break;
-            case 'down-right':
+            case 'up-right':
                 message = 'AA-' + string_dist + '-55-' + other_motor;
                 break;
+            case 'down':
+                message = '55-' + string_dist + '-AA-' + string_dist;
+                break;
+            case 'down-left':
+                message = '55-' + other_motor + '-AA-' + string_dist;
+                break;
+            case 'down-right':
+                message = '55-' + string_dist + '-AA-' + other_motor;
+                break;
             case 'left':
-                message = 'AA-' + string_dist + '-AA-' + string_dist;
+                message = '55-' + string_dist + '-55-' + string_dist;
                 break;
             case 'right':
-                message = '55-' + string_dist + '-55-' + string_dist;
+                message = 'AA-' + string_dist + '-AA-' + string_dist;
                 break;
             default:
                 message = 'send something';
@@ -227,22 +228,48 @@ var ConsoleComponent = (function () {
         this.history = [];
         this.helpArr = document.getElementsByClassName('hidden');
         this.helpEl = document.getElementsByClassName('btn-primary');
+        this.loader = document.getElementsByClassName('loader');
+        this.console = document.getElementsByClassName('cmdWindow');
     }
     ConsoleComponent.prototype.connect = function () {
         var _this = this;
-        this._ws = new WebSocket('ws://192.168.0.1:8080');
-        this._ws.onmessage = function (event) {
-            _this.history.push('[SERVER] ' + event.data);
-        };
-        this.helpArr[0].style.display = "block";
-        this.helpArr[1].style.display = "block";
+        this.loader[0].style.display = "block";
         this.helpEl[0].style.display = "none";
+        this._ws = new WebSocket('ws://192.168.0.1:2609');
+        var timeOut = setTimeout(this.timeOutConnect, 3000, this._ws, this.loader[0]);
+        this._ws.onopen = function (event) {
+            clearTimeout(timeOut);
+            _this.loader[0].style.display = "none";
+            _this._ws.onmessage = function (event) {
+                var jsonData = JSON.parse(event.data);
+                _this.history.push(jsonData.Message);
+                setTimeout(_this.updateScroll, 100, _this.console[0]);
+            };
+            for (var i = 0; i < _this.helpArr.length; i++) {
+                _this.helpArr[i].style.display = "block";
+            }
+            _this.console[0].style.display = "block";
+        };
+    };
+    ConsoleComponent.prototype.timeOutConnect = function (ws, loader) {
+        ws.close();
+        loader.style.display = "none";
+        document.getElementsByClassName('error')[0].style.display = "block";
+    };
+    ConsoleComponent.prototype.updateScroll = function (console) {
+        //calculate how much the div needs to be scrolled
+        var scrollHeight = console.scrollHeight;
+        var height = console.clientHeight;
+        var topCoord = console.scrollTop;
+        if (topCoord < (scrollHeight - height)) {
+            console.scrollTop += (scrollHeight - topCoord);
+        }
     };
     ConsoleComponent.prototype.send = function () {
         if (!this.command) {
             return;
         }
-        this.history.push('[CLIENT] ' + this.command);
+        this.history.push('>' + this.command);
         this._ws.send(this.command);
         this.command = '';
     };
@@ -280,26 +307,32 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 
 var GraphicsComponent = (function () {
     function GraphicsComponent(sanitizer) {
-        this.url = sanitizer.bypassSecurityTrustResourceUrl('http://192.168.0.1/www/html/index.html');
+        this.loader = document.getElementsByClassName('loader');
+        //this.url = sanitizer.bypassSecurityTrustResourceUrl('http://192.168.0.1/modell/index.html');
+        this.url = sanitizer.bypassSecurityTrustResourceUrl('http://192.168.0.1:2209/stream_simple.html');
     }
     GraphicsComponent.prototype.ngAfterViewInit = function () {
-        //var ws = new WebSocket('ws://192.168.0.1:8080');
-        //ws.onopen = event => {
-        //  ws.onmessage = event => {
-        //    clearTimeout(timeOut);
-        document.getElementsByClassName('successFrame')[0].style.display = "block";
-        //    ws.close();
-        //  };
-        //  ws.send('test');
-        //  alert("set timeout");
-        //  var timeOut = setTimeout(this.errorHappened, 3000, ws, document);
-        //}
-        //ws.onerror = event => {
-        //  alert("onerror");
-        //  this.errorHappened(ws, document);
-        //}
+        var _this = this;
+        var ws = new WebSocket('ws://192.168.0.1:2609');
+        ws.onopen = function (event) {
+            clearTimeout(timeOutConnect);
+            ws.onmessage = function (event) {
+                clearTimeout(timeOut);
+                _this.loader[0].style.display = "none";
+                document.getElementsByClassName('successFrame')[0].style.display = "block";
+                ws.close();
+            };
+            ws.send('test');
+            var timeOut = setTimeout(_this.errorHappened, 3000, ws, document, _this.loader[0]);
+        };
+        ws.onerror = function (event) {
+            clearTimeout(timeOutConnect);
+            _this.errorHappened(ws, document, _this.loader[0]);
+        };
+        var timeOutConnect = setTimeout(this.errorHappened, 3000, ws, document, this.loader[0]);
     };
-    GraphicsComponent.prototype.errorHappened = function (ws, document) {
+    GraphicsComponent.prototype.errorHappened = function (ws, document, loader) {
+        loader.style.display = "none";
         document.getElementsByClassName('errorDiv')[0].style.display = "block";
         ws.close();
     };
@@ -406,8 +439,25 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 
 var AppComponent = (function () {
     function AppComponent() {
-        this.title = 'app works!';
+        this.menu = document.getElementsByClassName('menu');
+        this.buttonMenu = document.getElementsByClassName('menuButton');
+        this.menuElements = document.getElementsByClassName('linkEl');
     }
+    AppComponent.prototype.ngAfterViewInit = function () {
+        var firstElement = document.getElementsByClassName('linkEl');
+        firstElement[0].classList.toggle('menuActive');
+    };
+    AppComponent.prototype.menuClicked = function () {
+        var menu = this.menu[0];
+        menu.classList.toggle('open');
+    };
+    AppComponent.prototype.menuLinkClicked = function (linkElement) {
+        var menu = this.menu[0];
+        var el = document.getElementsByClassName('menuActive');
+        el[0].classList.toggle('menuActive');
+        this.menuElements[linkElement].classList.toggle('menuActive');
+        menu.classList.toggle('open');
+    };
     AppComponent = __decorate([
         __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["_5" /* Component */])({
             selector: 'app-root',
@@ -546,21 +596,21 @@ var environment = {
 /***/ 663:
 /***/ (function(module, exports) {
 
-module.exports = ".main-content {\r\n  margin: 0;\r\n  padding: 0;\r\n}\r\n"
+module.exports = ".main-content {\r\n  margin: 0;\r\n  padding: 0;\r\n}\r\n\r\n.menu {\r\n  background: #47a3da;\r\n  position: fixed;\r\n  width: 240px;\r\n  height: 100%;\r\n  top: 0;\r\n  z-index: 1000;\r\n  left: -240px;\r\n  -webkit-transition: all 0.3s ease;\r\n  transition: all 0.3s ease;\r\n}\r\n\r\n.menu.open {\r\n  left: 0px;\r\n}\r\n\r\n.menu h3 {\r\n  color: #afdefa;\r\n  font-size: 1.9em;\r\n  padding: 20px;\r\n  margin: 0;\r\n  font-weight: 300;\r\n  background: #0d77b6;\r\n}\r\n\r\n.menu a {\r\n  display: block;\r\n  color: #fff;\r\n  font-size: 1.1em;\r\n  font-weight: 300;\r\n  border-bottom: 1px solid #258ecd;\r\n  padding: 1em;\r\n  text-decoration: none;\r\n  cursor: pointer;\r\n}\r\n\r\n/*.menu a:hover*/\r\n.menuActive {\r\n  background: #258ecd;\r\n  /*text-decoration: none;*/\r\n}\r\n\r\n.menu a:active {\r\n  background: #afdefa;\r\n  color: #47a3da;\r\n  text-decoration: none;\r\n}\r\n\r\n@media screen and (max-height: 26.375em) {\r\n  .menu {\r\n    font-size: 90%;\r\n    width: 190px;\r\n    left: -190px;\r\n  }\r\n}\r\n"
 
 /***/ }),
 
 /***/ 664:
 /***/ (function(module, exports) {
 
-module.exports = "p {\r\n  text-align: center;\r\n}\r\n\r\n.btn-choose {\r\n  float: left;\r\n  margin: 5%;\r\n}\r\n\r\n.error {\r\n  display: none;\r\n}\r\n\r\n.manual {\r\n  display: none;\r\n}\r\n\r\n.main {\r\n\twidth: 90%;\r\n\tmargin: 0 auto;\r\n\tposition: relative;\r\n}\r\n\r\n.bokeh {\r\n    font-size: 100px;\r\n    width: 1em;\r\n    height: 1em;\r\n    position: relative;\r\n    margin: 100px auto;\r\n    border-radius: 50%;\r\n    border: .01em solid rgba(150,150,150,0.1);\r\n    list-style: none;\r\n}\r\n\r\n.bokeh li {\r\n    position: absolute;\r\n    width: .2em;\r\n    height: .2em;\r\n    border-radius: 50%;\r\n}\r\n\r\n.bokeh li:nth-child(1) {\r\n    left: 50%;\r\n    top: 0;\r\n    margin: 0 0 0 -.1em;\r\n    background: #00C176;\r\n    -webkit-transform-origin: 50% 250%;\r\n    transform-origin: 50% 250%;\r\n    -webkit-animation:\r\n        rota 1.13s linear infinite,\r\n        opa 3.67s ease-in-out infinite alternate;\r\n    animation:\r\n        rota 1.13s linear infinite,\r\n        opa 3.67s ease-in-out infinite alternate;\r\n}\r\n\r\n.bokeh li:nth-child(2) {\r\n    top: 50%;\r\n    right: 0;\r\n    margin: -.1em 0 0 0;\r\n    background: #FF003C;\r\n    -webkit-transform-origin: -150% 50%;\r\n    transform-origin: -150% 50%;\r\n    -webkit-animation:\r\n        rota 1.86s linear infinite,\r\n        opa 4.29s ease-in-out infinite alternate;\r\n    animation:\r\n        rota 1.86s linear infinite,\r\n        opa 4.29s ease-in-out infinite alternate;\r\n}\r\n\r\n.bokeh li:nth-child(3) {\r\n    left: 50%;\r\n    bottom: 0;\r\n    margin: 0 0 0 -.1em;\r\n    background: #FABE28;\r\n    -webkit-transform-origin: 50% -150%;\r\n    transform-origin: 50% -150%;\r\n    -webkit-animation:\r\n        rota 1.45s linear infinite,\r\n        opa 5.12s ease-in-out infinite alternate;\r\n    animation:\r\n        rota 1.45s linear infinite,\r\n        opa 5.12s ease-in-out infinite alternate;\r\n}\r\n\r\n.bokeh li:nth-child(4) {\r\n    top: 50%;\r\n    left: 0;\r\n    margin: -.1em 0 0 0;\r\n    background: #88C100;\r\n    -webkit-transform-origin: 250% 50%;\r\n    transform-origin: 250% 50%;\r\n    -webkit-animation:\r\n        rota 1.72s linear infinite,\r\n        opa 5.25s ease-in-out infinite alternate;\r\n    animation:\r\n        rota 1.72s linear infinite,\r\n        opa 5.25s ease-in-out infinite alternate;\r\n}\r\n\r\n@-webkit-keyframes rota {\r\n    from { }\r\n    to { -webkit-transform: rotate(360deg); }\r\n}\r\n\r\n@keyframes rota {\r\n    from { }\r\n    to { -webkit-transform: rotate(360deg); transform: rotate(360deg); }\r\n}\r\n\r\n@-webkit-keyframes opa {\r\n    0% { }\r\n    12.0% { opacity: 0.80; }\r\n    19.5% { opacity: 0.88; }\r\n    37.2% { opacity: 0.64; }\r\n    40.5% { opacity: 0.52; }\r\n    52.7% { opacity: 0.69; }\r\n    60.2% { opacity: 0.60; }\r\n    66.6% { opacity: 0.52; }\r\n    70.0% { opacity: 0.63; }\r\n    79.9% { opacity: 0.60; }\r\n    84.2% { opacity: 0.75; }\r\n    91.0% { opacity: 0.87; }\r\n}\r\n\r\n@keyframes opa {\r\n    0% { }\r\n    12.0% { opacity: 0.80; }\r\n    19.5% { opacity: 0.88; }\r\n    37.2% { opacity: 0.64; }\r\n    40.5% { opacity: 0.52; }\r\n    52.7% { opacity: 0.69; }\r\n    60.2% { opacity: 0.60; }\r\n    66.6% { opacity: 0.52; }\r\n    70.0% { opacity: 0.63; }\r\n    79.9% { opacity: 0.60; }\r\n    84.2% { opacity: 0.75; }\r\n    91.0% { opacity: 0.87; }\r\n}\r\n"
+module.exports = "p {\r\n  text-align: center;\r\n}\r\n\r\n.btn-choose {\r\n  float: left;\r\n  margin: 5%;\r\n}\r\n\r\n.error {\r\n  display: none;\r\n}\r\n\r\n.manual {\r\n  display: none;\r\n}\r\n\r\n.btn.manual {\r\n  position: absolute;\r\n  top: 500px;\r\n  left: 20%;\r\n  z-index: 100000;\r\n}\r\n\r\n.joyStickDiv {\r\n  position: absolute;\r\n  left: 0;\r\n  top: 0;\r\n  width: 100%;\r\n  height: 100%;\r\n}\r\n"
 
 /***/ }),
 
 /***/ 665:
 /***/ (function(module, exports) {
 
-module.exports = "\r\n"
+module.exports = ".cmdWindow {\r\n  background: #000;\r\n  border: 3px groove #ccc;\r\n  color: #ccc;\r\n  padding: 5px;\r\n  width: 80%;\r\n  height: 250px;\r\n  position: absolute;\r\n  left: 10%;\r\n  top: 150px;\r\n  font-size: 8pt;\r\n  overflow-y: scroll;\r\n  display: none;\r\n}\r\n\r\n.cmdList {\r\n  list-style-type: none;\r\n  margin: 0;\r\n  padding: 0;\r\n  width: 100%;\r\n  /*height: 100%;*/\r\n}\r\n\r\n#inSend {\r\n  position: absolute;\r\n  top: 65%;\r\n}\r\n\r\n#btnSend {\r\n  position: absolute;\r\n  top: 70%;\r\n}\r\n"
 
 /***/ }),
 
@@ -581,28 +631,28 @@ module.exports = ""
 /***/ 668:
 /***/ (function(module, exports) {
 
-module.exports = "<div class=\"container main-content\">\n  <nav class=\"navbar navbar-light bg-faded\">\n    <!--<a class=\"navbar-brand\" href=\"#\">TS</a>-->\n    <ul class=\"nav navbar-nav\">\n      <li class=\"nav-item\">\n        <a class=\"nav-link\" [routerLink]=\"['/home']\">Home</a>\n      </li>\n      <li class=\"nav-item\">\n        <a class=\"nav-link\" [routerLink]=\"['/connect']\">Connect</a>\n      </li>\n      <li class=\"nav-item\">\n        <a class=\"nav-link\" [routerLink]=\"['/console']\">Konsole</a>\n      </li>\n      <li class=\"nav-item\">\n        <a class=\"nav-link\" [routerLink]=\"['/graphics']\">3D</a>\n      </li>\n    </ul>\n  </nav> <!-- /navbar -->\n\n  <!-- Main component for a primary marketing message or call to action -->\n  <div class=\"jumbotron\">\n    <h1>Transportsystem</h1>\n  </div>\n\n  <router-outlet></router-outlet>\n\n</div> <!-- /container -->\n"
+module.exports = "<div class=\"container main-content\">\n  <!--<nav class=\"navbar navbar-light bg-faded\">\n    <ul class=\"nav navbar-nav\">\n      <li class=\"nav-item\">\n        <a class=\"nav-link\" [routerLink]=\"['/home']\">Home</a>\n      </li>\n      <li class=\"nav-item\">\n        <a class=\"nav-link\" [routerLink]=\"['/connect']\">Connect</a>\n      </li>\n      <li class=\"nav-item\">\n        <a class=\"nav-link\" [routerLink]=\"['/console']\">Konsole</a>\n      </li>\n      <li class=\"nav-item\">\n        <a class=\"nav-link\" [routerLink]=\"['/graphics']\">3D</a>\n      </li>\n    </ul>\n  </nav>-->\n  <nav class=\"menu\" id=\"navMenu\">\n    <h3>Menü</h3>\n    <a [routerLink]=\"['/home']\" (click)=\"menuLinkClicked(0)\" class=\"linkEl\">Home</a>\n    <a [routerLink]=\"['/connect']\" (click)=\"menuLinkClicked(1)\" class=\"linkEl\">Steuern</a>\n    <a [routerLink]=\"['/console']\" (click)=\"menuLinkClicked(2)\" class=\"linkEl\">Konsole</a>\n    <a [routerLink]=\"['/graphics']\" (click)=\"menuLinkClicked(3)\" class=\"linkEl\">3D</a>\n    <a (click)=\"menuClicked()\">Close</a>\n  </nav>\n  <button id=\"showMenu\" class=\"menuButton\" (click)=\"menuClicked()\">Menü</button>\n  <!-- /navbar -->\n\n  <!-- Main component for a primary marketing message or call to action -->\n  <div class=\"jumbotron\">\n    <h1>Transportsystem</h1>\n  </div>\n\n  <router-outlet></router-outlet>\n\n</div> <!-- /container -->\n"
 
 /***/ }),
 
 /***/ 669:
 /***/ (function(module, exports) {
 
-module.exports = "<!--<button type=\"button\" class=\"btn btn-prim btn-primary\" (click)=\"connect()\">Connect</button>-->\r\n<button type=\"button\" class=\"btn btn-prim\" (click)=\"connect()\">Connect</button>\r\n<!--<button type=\"button\" class=\"btn btn-prim\" (click)=\"init()\">Debug Init</button>-->\r\n\r\n<p class=\"hidden\" style=\"\">W&auml;hlen Sie den Fahr-Modus:</p>\r\n<!--<input type=\"text\" class=\"hidden\" placeholder=\"Kommando\" [(ngModel)]=\"command\">-->\r\n<button type=\"button\" class=\"btn btn-choose hidden\" (click)=\"auto()\">Automatik</button>\r\n<button type=\"button\" class=\"btn btn-choose hidden\" (click)=\"man()\">Manuell</button>\r\n\r\n\r\n<section class=\"main loader\" style=\"display:none\">\r\n  <!-- the loading animation -->\r\n  <ul class=\"bokeh\">\r\n    <li></li>\r\n    <li></li>\r\n    <li></li>\r\n    <li></li>\r\n  </ul>\r\n</section>\r\n\r\n<p class=\"error\">ERROR: Failed to Connect to the WebSocket Server!</p>\r\n\r\n<!--<p class=\"hidden\">\r\n  X: <p id=\"textView1\"></p>\r\n  Y: <p id=\"textView2\"></p>\r\n  Angle: <p id=\"textView3\"></p>\r\n  Distance: <p id=\"textView4\"></p>\r\n  Direction: <p id=\"textView5\"></p>\r\n</p>-->\r\n\r\n<div id=\"debug1\" class=\"manual direction\" style=\"position:fixed; left:5%; top:30%; color:grey;\">\r\n  Direction: Base\r\n</div>\r\n\r\n<div id=\"debug2\" class=\"manual distance\" style=\"position:fixed; left:5%; top:34%; color:grey;\">\r\n  Distance: 0\r\n</div>\r\n\r\n<button type=\"button\" class=\"btn manual\" (click)=\"back()\">Zur&uuml;ck</button>\r\n\r\n<ul>\r\n  <li *ngFor=\"let h of history\">{{ h }}</li>\r\n</ul>\r\n"
+module.exports = "<!--<button type=\"button\" class=\"btn btn-prim btn-primary\" (click)=\"connect()\">Connect</button>-->\r\n<button type=\"button\" class=\"btn btn-prim\" (click)=\"connect()\">Connect</button>\r\n<!--<button type=\"button\" class=\"btn btn-prim\" (click)=\"init()\">Debug Init</button>-->\r\n\r\n<p class=\"hidden\" style=\"\">W&auml;hlen Sie den Fahr-Modus:</p>\r\n<!--<input type=\"text\" class=\"hidden\" placeholder=\"Kommando\" [(ngModel)]=\"command\">-->\r\n<button type=\"button\" class=\"btn btn-choose hidden\" (click)=\"auto()\">Automatik</button>\r\n<button type=\"button\" class=\"btn btn-choose hidden\" (click)=\"man()\">Manuell</button>\r\n\r\n\r\n<section class=\"loader\" style=\"display:none\">\r\n  <!-- the loading animation -->\r\n  <ul class=\"bokeh\">\r\n    <li></li>\r\n    <li></li>\r\n    <li></li>\r\n    <li></li>\r\n  </ul>\r\n</section>\r\n\r\n<p class=\"error\">ERROR: Verbindung zum WebSocket Server fehlgeschlagen! Sind Sie mit der WLAN Schnittstelle verbunden?</p>\r\n\r\n<!--<p class=\"hidden\">\r\n  X: <p id=\"textView1\"></p>\r\n  Y: <p id=\"textView2\"></p>\r\n  Angle: <p id=\"textView3\"></p>\r\n  Distance: <p id=\"textView4\"></p>\r\n  Direction: <p id=\"textView5\"></p>\r\n</p>-->\r\n\r\n<div id=\"debug1\" class=\"manual direction\" style=\"position:fixed; left:5%; top:30%; color:grey;\">\r\n  Direction: Base\r\n</div>\r\n\r\n<div id=\"debug2\" class=\"manual distance\" style=\"position:fixed; left:5%; top:34%; color:grey;\">\r\n  Distance: 0\r\n</div>\r\n\r\n<div class=\"manual joyStickDiv\"></div>\r\n\r\n<button type=\"button\" class=\"btn manual\" (click)=\"back()\">Zur&uuml;ck</button>\r\n\r\n<ul>\r\n  <li *ngFor=\"let h of history\">{{ h }}</li>\r\n</ul>\r\n"
 
 /***/ }),
 
 /***/ 670:
 /***/ (function(module, exports) {
 
-module.exports = "<h2>Todo</h2>\n<ol>\n  <li>Verbindung zum Raspi aufbauen</li>\n  <li>Kommando senden</li>\n  <li>Kommando empfangen?</li>\n</ol>\n\n<button type=\"button\" id=\"btn-primary\" class=\"btn btn-primary\" (click)=\"connect()\">Connect</button>\n\n<input type=\"text\" class=\"hidden\" placeholder=\"Kommando\" [(ngModel)]=\"command\">\n<button type=\"button\" class=\"btn hidden\" (click)=\"send()\">Senden</button>\n\n<ul>\n  <li *ngFor=\"let h of history\">{{ h }}</li>\n</ul>\n"
+module.exports = "<button type=\"button\" id=\"btn-primary\" class=\"btn btn-primary\" (click)=\"connect()\">Connect</button>\n\n<section class=\"loader\" style=\"display:none\">\n  <!-- the loading animation -->\n  <ul class=\"bokeh\">\n    <li></li>\n    <li></li>\n    <li></li>\n    <li></li>\n  </ul>\n</section>\n\n<p class=\"error\" style=\"display:none\">ERROR: Verbindung zum WebSocket Server fehlgeschlagen! Sind Sie mit der WLAN Schnittstelle verbunden?</p>\n\n<div class=\"cmdWindow\">\n  <ul class=\"cmdList\">\n    <li class=\"cmdItem\" *ngFor=\"let h of history\">{{ h }}</li>\n  </ul>\n</div>\n\n<input type=\"text\" id=\"inSend\" class=\"hidden\" placeholder=\"Kommando\" [(ngModel)]=\"command\">\n<button type=\"button\" id=\"btnSend\" class=\"btn hidden\" (click)=\"send()\">Senden</button>\n"
 
 /***/ }),
 
 /***/ 671:
 /***/ (function(module, exports) {
 
-module.exports = "<!--<div id=\"container\" style=\"width: 100%; height: 400px\"></div>-->\n<!--<div ng-include=\"'http://192.168.0.1/html/index.html'\"></div>-->\n<!--<iframe class=\"successFrame\" src=\"http://192.168.0.1/html/index.html\" frameborder=\"0\" width=\"100%\" height=\"400px\" style=\"display: none\"></iframe>-->\n<iframe class=\"successFrame\" [src]=\"url\" frameborder=\"0\" width=\"100%\" height=\"400px\" style=\"display: none\"></iframe>\n<div class=\"errorDiv\" id=\"container\" style=\"display: none\">Fehler: die Verbindung zu Dobby steht offenbar nicht. Sind Sie mit der WLAN-Schnittstelle verbunden?</div>\n"
+module.exports = "<!--<div id=\"container\" style=\"width: 100%; height: 400px\"></div>-->\n<!--<div ng-include=\"'http://192.168.0.1/html/index.html'\"></div>-->\n<!--<iframe class=\"successFrame\" src=\"http://192.168.0.1/html/index.html\" frameborder=\"0\" width=\"100%\" height=\"400px\" style=\"display: none\"></iframe>-->\n<section class=\"loader\">\n  <!-- the loading animation -->\n  <ul class=\"bokeh\">\n    <li></li>\n    <li></li>\n    <li></li>\n    <li></li>\n  </ul>\n</section>\n\n<iframe class=\"successFrame\" [src]=\"url\" frameborder=\"0\" width=\"100%\" height=\"400px\" style=\"display: none\"></iframe>\n<div class=\"errorDiv\" id=\"container\" style=\"display: none\">Fehler: die Verbindung zu Dobby steht offenbar nicht. Sind Sie mit der WLAN-Schnittstelle verbunden?</div>\n"
 
 /***/ }),
 
@@ -633,7 +683,7 @@ var VirtualJoystick	= function(opts)
 	this._stickRadius	= opts.stickRadius !== undefined ? opts.stickRadius : 100
 	this._useCssTransform	= opts.useCssTransform !== undefined ? opts.useCssTransform : false
 
-	this._container.style.position	= "relative"
+	//this._container.style.position	= "relative"
 
 	this._container.appendChild(this._baseEl)
 	this._baseEl.style.position	= "absolute"
@@ -1059,8 +1109,8 @@ VirtualJoystick.prototype._onTouchMove	= function(event)
 VirtualJoystick.prototype._buildJoystickBase	= function()
 {
 	var canvas	= document.createElement( 'canvas' );
-	canvas.width	= 126;
-	canvas.height	= 126;
+	canvas.width	= 252;
+	canvas.height	= 252;
 
 	var ctx		= canvas.getContext('2d');
 	var base_image = new Image();
@@ -1090,8 +1140,8 @@ VirtualJoystick.prototype._buildJoystickBase	= function()
 VirtualJoystick.prototype._buildJoystickStick	= function()
 {
 	var canvas	= document.createElement( 'canvas' );
-	canvas.width	= 86;
-	canvas.height	= 86;
+	canvas.width	= 132;
+	canvas.height	= 132;
 	var ctx		= canvas.getContext('2d');
 
 	var stick_image = new Image();

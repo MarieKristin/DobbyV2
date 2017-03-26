@@ -15,7 +15,7 @@ var VirtualJoystick	= function(opts)
 	this._stickRadius	= opts.stickRadius !== undefined ? opts.stickRadius : 100
 	this._useCssTransform	= opts.useCssTransform !== undefined ? opts.useCssTransform : false
 
-	this._container.style.position	= "relative"
+	//this._container.style.position	= "relative"
 
 	this._container.appendChild(this._baseEl)
 	this._baseEl.style.position	= "absolute"
@@ -441,8 +441,8 @@ VirtualJoystick.prototype._onTouchMove	= function(event)
 VirtualJoystick.prototype._buildJoystickBase	= function()
 {
 	var canvas	= document.createElement( 'canvas' );
-	canvas.width	= 126;
-	canvas.height	= 126;
+	canvas.width	= 252;
+	canvas.height	= 252;
 
 	var ctx		= canvas.getContext('2d');
 	var base_image = new Image();
@@ -472,8 +472,8 @@ VirtualJoystick.prototype._buildJoystickBase	= function()
 VirtualJoystick.prototype._buildJoystickStick	= function()
 {
 	var canvas	= document.createElement( 'canvas' );
-	canvas.width	= 86;
-	canvas.height	= 86;
+	canvas.width	= 132;
+	canvas.height	= 132;
 	var ctx		= canvas.getContext('2d');
 
 	var stick_image = new Image();

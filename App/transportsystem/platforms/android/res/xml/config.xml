@@ -19,7 +19,9 @@
     <allow-intent href="sms:*" />
     <allow-intent href="mailto:*" />
     <allow-intent href="geo:*" />
-    <allow-navigation href="http://192.168.0.1/www/html/index.html" />
+    <allow-navigation href="http://192.168.0.1/modell/index.html" />
+    <allow-navigation href="http://192.168.0.1:2209" />
+    <allow-navigation href="http://192.168.0.1:2209/livestream.html" />
     <allow-intent href="market:*" />
     <preference name="loglevel" value="DEBUG" />
     <preference name="webView" value="org.crosswalk.engine.XWalkWebViewEngine" />
