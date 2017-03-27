@@ -38,6 +38,12 @@ Sensor::~Sensor(){
 
 }
 
+int Sensor::getSensInit(){
+		int sensValue = sens_init;
+		return sensValue;
+	}
+
+
 void Sensor::closeSensor(){
 	close(sockfd);
 	setSensorRoutine(0);

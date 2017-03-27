@@ -17,6 +17,7 @@ public:
 	void setToInput(int pin);
 	void writePin(int pin, int value);
 	void setDelay(int duration);
+	void setDelay1();
 	void setSleep(int duration);
 	void writeByte(int value);
 	void closeSerial();
