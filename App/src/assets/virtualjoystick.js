@@ -113,42 +113,7 @@ VirtualJoystick.touchScreenAvailable	= function()
 VirtualJoystick.prototype.deltaX	= function(){ return this._stickX - this._baseX;	}
 VirtualJoystick.prototype.deltaY	= function(){ return this._stickY - this._baseY;	}
 
-/*
-VirtualJoystick.prototype.up	= function(){
-	if( this._pressed === false )	return false;
-	var deltaX	= this.deltaX();
-	var deltaY	= this.deltaY();
-	if( deltaY >= 0 )				return false;
-	if( Math.abs(deltaX) > 2*Math.abs(deltaY) )	return false;
-	return true;
-}
-VirtualJoystick.prototype.down	= function(){
-	if( this._pressed === false )	return false;
-	var deltaX	= this.deltaX();
-	var deltaY	= this.deltaY();
-	if( deltaY <= 0 )				return false;
-	if( Math.abs(deltaX) > 2*Math.abs(deltaY) )	return false;
-	return true;
-}
-VirtualJoystick.prototype.right	= function(){
-	if( this._pressed === false )	return false;
-	var deltaX	= this.deltaX();
-	var deltaY	= this.deltaY();
-	if( deltaX <= 0 )				return false;
-	if( Math.abs(deltaY) > 2*Math.abs(deltaX) )	return false;
-	return true;
-}
-VirtualJoystick.prototype.left	= function(){
-	if( this._pressed === false )	return false;
-	var deltaX	= this.deltaX();
-	var deltaY	= this.deltaY();
-	if( deltaX >= 0 )				return false;
-	if( Math.abs(deltaY) > 2*Math.abs(deltaX) )	return false;
-	return true;
-}
-*/
-
-VirtualJoystick.prototype.up	= function(deltaX, deltaY){
+/*VirtualJoystick.prototype.up	= function(deltaX, deltaY){
 	if( deltaY >= 0 ) return false;
 	if( Math.abs(deltaX) > 2*Math.abs(deltaY) )	return false;
 	//if ( Math.abs(deltaX) > ( Math.tan(67.5)*Math.abs(deltaY) )) return false;
@@ -171,7 +136,89 @@ VirtualJoystick.prototype.left	= function(deltaX, deltaY){
 	if( Math.abs(deltaY) > 2*Math.abs(deltaX) )	return false;
 	//if ( Math.abs(deltaY) > ( Math.tan(67.5)*Math.abs(deltaX) ) ) return false;
 	return true;
+}*/
+
+/*
+* return values:
+* - 0: up           - 6: down         - 12: center
+* - 1: up-right     - 7: down-left
+* - 2: up-r-right   - 8: down-l-left
+* - 3: right        - 9: left
+* - 4: down-r-right - 10:up-l-left
+* - 5: down-right   - 11:up-left
+*/
+
+VirtualJoystick.prototype.getDir = function(deltaX, deltaY) {
+  //test the four direction with at least one value first
+  if (deltaX == 0) {
+    if (deltaY == 0) return 12;
+    if (deltaY >0) return 6; //down
+    return 0; //up
+  }
+  if (deltaY == 0) {
+    if (deltaX >0) return 3; //right
+    return 9; //left
+  }
+
+  //not one exact direction
+  var alpha = this.getAlpha(deltaX, deltaY);
+
+  if (deltaY <0) {  //somewhere in the upper part
+    if (alpha <=27) return 0; //up
+    if (alpha <=(27+25)) {
+      if (deltaX>0) return 1; //up-right
+      return 11; //up-left
+    }
+    if (alpha <=(27+25+25)) {
+      if (deltaX>0) return 2; //up-r-right
+      return 10; //up-l-left
+    }
+    if (deltaX >0) return 3; //right
+    return 9; //left
+  } else { //somwhere in the lower part
+    if (alpha <=27) return 6; //down
+    if (alpha <=(27+25)) {
+      if (deltaX>0) return 5; //down-right
+      return 7; //down-left
+    }
+    if (alpha <=(27+25+25)) {
+      if (deltaX>0) return 4; //down-r-right
+      return 8; //down-l-left
+    }
+    if (deltaX >0) return 3; //right
+    return 9; //left
+  }
 }
+
+VirtualJoystick.prototype.getAlpha = function(deltaX, deltaY) {
+  var alpha = this.degrees(Math.atan(this.round(Math.abs(deltaX)/Math.abs(deltaY), 3)));
+  return alpha;
+}
+
+VirtualJoystick.prototype.round = function(number, dec) {
+  return +(Math.round(number + "e+" + dec)  + "e-" + dec);
+}
+
+VirtualJoystick.prototype.degrees = function(radians) {
+  return radians * 180 / Math.PI;
+}
+
+/*VirtualJoystick.prototype.up = function(deltaX, deltaY) {
+  if( deltaY >= 0 ) return false;
+  if( deltaX == 0 ) return true;
+  if( Math.atan( Math.abs(deltaX)/Math.abs(deltaY) ) > 27 ) return false;
+  return true;
+}
+
+VirtualJoystick.prototype.upR = function(deltaX, deltaY) {
+  if( deltaY >= 0 ) return false;
+  if( Math.atan( Math.abs(deltaX)/Math.abs(deltaY)) > (18+27) ) return false;
+  return true;
+} //needs to be asked for "up" before
+
+VirtualJoystick.prototype.upRR = function(deltaX, deltaY) {
+  if( deltaY >= 0 ) return false;
+}*/
 
 //////////////////////////////////////////////////////////////////////////////////
 //										//
@@ -257,7 +304,49 @@ VirtualJoystick.prototype.getDirection = function() {
   var deltaX	= this.deltaX();
   var deltaY	= this.deltaY();
 
-  if ( this.up(deltaX, deltaY) ) {            //so the stick is somewhere in the upper part
+  switch(this.getDir(deltaX,deltaY)) {
+    case 0:
+      dir = 'up';
+      break;
+    case 1:
+      dir = 'up-right';
+      break;
+    case 2:
+      dir = 'up-r-right';
+      break;
+    case 3:
+      dir = 'right';
+      break;
+    case 4:
+      dir = 'down-r-right';
+      break;
+    case 5:
+      dir = 'down-right';
+      break;
+    case 6:
+      dir = 'down';
+      break;
+    case 7:
+      dir = 'down-left';
+      break;
+    case 8:
+      dir = 'down-l-left';
+      break;
+    case 9:
+      dir = 'left';
+      break;
+    case 10:
+      dir = 'up-l-left';
+      break;
+    case 11:
+      dir = 'up-left';
+      break;
+    default:
+      //do Nothing because it's either the center or something went wrong
+      break;
+  }
+
+  /*if ( this.up(deltaX, deltaY) ) {            //so the stick is somewhere in the upper part
     if ( this.left(deltaX, deltaY) ) {        //so the stick is "up left"
       dir = 'up-left';
     } else if ( this.right(deltaX, deltaY) ) {//so the stick is "up right"
@@ -280,6 +369,7 @@ VirtualJoystick.prototype.getDirection = function() {
   }                                           //if nothing is fitting for the direction, this means
                                               //either something went horribly wrong
                                               //or the stick is in default position
+  */
   return dir;
 }
 
@@ -298,7 +388,48 @@ VirtualJoystick.prototype._calculateDirection = function() {
   var deltaX	= this.deltaX();
   var deltaY	= this.deltaY();
 
-  if ( this.up(deltaX, deltaY) ) {            //so the stick is somewhere in the upper part
+  switch(this.getDir(deltaX,deltaY)) {
+    case 0:
+      dir = 'up';
+      break;
+    case 1:
+      dir = 'up-right';
+      break;
+    case 2:
+      dir = 'up-r-right';
+      break;
+    case 3:
+      dir = 'right';
+      break;
+    case 4:
+      dir = 'down-r-right';
+      break;
+    case 5:
+      dir = 'down-right';
+      break;
+    case 6:
+      dir = 'down';
+      break;
+    case 7:
+      dir = 'down-left';
+      break;
+    case 8:
+      dir = 'down-l-left';
+      break;
+    case 9:
+      dir = 'left';
+      break;
+    case 10:
+      dir = 'up-l-left';
+      break;
+    case 11:
+      dir = 'up-left';
+      break;
+    default:
+      //do Nothing because it's either the center or something went wrong
+      break;
+  }
+  /*if ( this.up(deltaX, deltaY) ) {            //so the stick is somewhere in the upper part
     if ( this.left(deltaX, deltaY) ) {        //so the stick is "up left"
       dir = 'up-left';
     } else if ( this.right(deltaX, deltaY) ) {//so the stick is "up right"
@@ -321,6 +452,7 @@ VirtualJoystick.prototype._calculateDirection = function() {
   }                                           //if nothing is fitting for the direction, this means
                                               //either something went horribly wrong
                                               //or the stick is in default position
+  */
 
   if (this._direction != false) {
     this._direction.innerHTML = "Direction: " + dir;

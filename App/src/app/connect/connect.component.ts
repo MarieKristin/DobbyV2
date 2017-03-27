@@ -25,32 +25,6 @@ export class ConnectComponent {
   private joystick;
   private intervalID;
 
-  //start of debugging
-  /*public init() {
-    this.helpEl[0].style.display = "none";
-
-    this.joystick = new VirtualJoystick({
-      mouseSupport: true,
-      stationaryBase: true,
-      direction: this.direction[0],
-      distance: this.distance[0],
-      baseX: 200,
-      baseY: 400,
-      limitStickTravel: true,
-      stickRadius: 50
-    });
-
-    var laufI;
-    for (laufI=0; laufI< this.arrMan.length; laufI++) {
-      this.arrMan[laufI].style.display = "block";
-    }
-
-    this.history.push('[CLIENT] ' + 'JoyStick initiated');
-    this.intervalID = setInterval(this.sendToMotor, 3000, this.history, this.joystick);
-    //this.intervalID = setInterval(this.sendToMotor, 3000, this.history);
-  }*/
-  //end of debugging
-
   // TODO: In einen Angular 2 Service schieben
   constructor() {  }
 
@@ -60,22 +34,22 @@ export class ConnectComponent {
     this.helpEl[0].style.display = "none";
     this.loader[0].style.display = "block";
 
-    this._ws = new WebSocket('ws://192.168.0.1:2609');
+    //this._ws = new WebSocket('ws://192.168.0.1:2609');
 
-    var timeOut = setTimeout(this.timeOutConnect, 3000, this._ws, this.loader[0]);
+    //var timeOut = setTimeout(this.timeOutConnect, 3000, this._ws, this.loader[0]);
 
-    this._ws.onopen = event => {
-      clearTimeout(timeOut);
+    //this._ws.onopen = event => {
+    //  clearTimeout(timeOut);
       this.loader[0].style.display = "none";
 
-      this._ws.onmessage = event => {
-        this.history.push('[SERVER] ' + event.data);
-      };
+    //  this._ws.onmessage = event => {
+        //this.history.push('[SERVER] ' + event.data);
+    //  };
 
       for (i=0; i< this.arrChoose.length; i++) {
         this.arrChoose[i].style.display = "block";
       }
-    }
+    //}
   }
 
   public timeOutConnect(ws,loader) {
@@ -85,17 +59,7 @@ export class ConnectComponent {
   }
 
   public auto() {
-    //if (!this.command) {
-    //  return;
-    //}
-
-    //this.history.push('[CLIENT] ' + this.command);
-
-    //this._ws.send(this.command);
-    this._ws.send('automatik');
-    this.history.push('[CLIENT] ' + 'automatik');
-
-    //this.command = '';
+    //this._ws.send('automatik');
   }
 
   public man() {
@@ -113,10 +77,11 @@ export class ConnectComponent {
       stickRadius: 90
     });
 
-    this.intervalID = setInterval(this.sendToMotor, 400, this.history, this.joystick, this._ws);
+    //this.intervalID = setInterval(this.sendToMotor, 400, this.history, this.joystick, this._ws);
+    this.intervalID = setInterval(this.sendToMotor, 400, this.history, this.joystick);
 
-    this._ws.send('manuell');
-    this.history.push('[CLIENT] ' + 'manuell');
+    //this._ws.send('manuell');
+    //this.history.push('[CLIENT] ' + 'manuell');
 
     //this.command = '';
     for (i=0; i< this.arrChoose.length; i++) {
@@ -125,10 +90,10 @@ export class ConnectComponent {
     for (i=0; i< this.arrMan.length; i++) {
       this.arrMan[i].style.display = "block";
     }
-    //(<HTMLElement>document.getElementById('debug1')).innerHTML = "Direction: " + this.joystick.calculateDirection();
   }
 
-  private sendToMotor(historyList, joyStick, webSocket) {
+  //private sendToMotor(historyList, joyStick, webSocket) {
+  private sendToMotor(historyList, joyStick) {
     var message;
     var dir = joyStick.getDirection();
     var dist = joyStick.getDistance();
@@ -165,19 +130,19 @@ export class ConnectComponent {
       case 'up':
         message = 'AA-' + string_dist + '-55-' + string_dist;
         break;
-      case 'up-left':
+      case 'up-left': case 'up-l-left':
         message = 'AA-' + other_motor + '-55-' + string_dist;
         break;
-      case 'up-right':
+      case 'up-right': case 'up-r-right':
         message = 'AA-' + string_dist + '-55-' + other_motor;
         break;
       case 'down':
         message = '55-' + string_dist + '-AA-' + string_dist;
         break;
-      case 'down-left':
+      case 'down-left': case 'down-l-left':
         message = '55-' + other_motor + '-AA-' + string_dist;
         break;
-      case 'down-right':
+      case 'down-right': case 'down-r-right':
         message = '55-' + string_dist + '-AA-' + other_motor;
         break;
       case 'left':
@@ -191,7 +156,7 @@ export class ConnectComponent {
         break;
     }
 
-    webSocket.send(message);
+    //webSocket.send(message);
     //historyList.push('[CLIENT] ' + message);
   }
 
@@ -200,8 +165,8 @@ export class ConnectComponent {
 
     clearInterval(this.intervalID);
     this.joystick.destroy();
-    this._ws.send('STOP');
-    this.history.push('[CLIENT] ' + 'STOP');
+    //this._ws.send('STOP');
+    //this.history.push('[CLIENT] ' + 'STOP');
     for (i=0; i< this.arrMan.length; i++) {
       this.arrMan[i].style.display = "none";
     }
