@@ -41,6 +41,8 @@ export class ConnectComponent {
     //this._ws.onopen = event => {
     //  clearTimeout(timeOut);
       this.loader[0].style.display = "none";
+      var menu = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('menuButton');
+      menu[0].classList.add('inactive');
 
     //  this._ws.onmessage = event => {
         //this.history.push('[SERVER] ' + event.data);
@@ -160,6 +162,19 @@ export class ConnectComponent {
     //historyList.push('[CLIENT] ' + message);
   }
 
+  private endWs() {
+    var i;
+    clearInterval(this.intervalID);
+    //this._ws.close();
+
+    for (i=0; i< this.arrChoose.length; i++) {
+      this.arrChoose[i].style.display = "none";
+    }
+    this.helpEl[0].style.display = "block";
+    var menu = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('menuButton');
+    menu[0].classList.remove('inactive');
+  }
+
   private back() {
     var i = 0;
 
@@ -173,6 +188,5 @@ export class ConnectComponent {
     for (i=0; i< this.arrChoose.length; i++) {
       this.arrChoose[i].style.display = "block";
     }
-    //this.helpEl[0].style.display = "block";
   }
 }

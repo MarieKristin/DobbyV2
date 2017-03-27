@@ -16,8 +16,12 @@ export class AppComponent implements AfterViewInit{
   }
 
   public menuClicked() {
-    var menu = this.menu[0];
-    menu.classList.toggle('open');
+    if(this.buttonMenu[0].classList.contains('inactive')) {
+      //doNothing -> button is inactive
+    } else {
+      var menu = this.menu[0];
+      menu.classList.toggle('open');
+    }
   }
 
   public menuLinkClicked(linkElement) {

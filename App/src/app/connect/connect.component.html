@@ -6,6 +6,7 @@
 <!--<input type="text" class="hidden" placeholder="Kommando" [(ngModel)]="command">-->
 <button type="button" class="btn btn-choose hidden" (click)="auto()">Automatik</button>
 <button type="button" class="btn btn-choose hidden" (click)="man()">Manuell</button>
+<button type="button" class="btn btn-choose btn-end hidden" (click)="endWs()">Beenden</button>
 
 
 <section class="loader" style="display:none">
@@ -20,19 +21,11 @@
 
 <p class="error">ERROR: Verbindung zum WebSocket Server fehlgeschlagen! Sind Sie mit der WLAN Schnittstelle verbunden?</p>
 
-<!--<p class="hidden">
-  X: <p id="textView1"></p>
-  Y: <p id="textView2"></p>
-  Angle: <p id="textView3"></p>
-  Distance: <p id="textView4"></p>
-  Direction: <p id="textView5"></p>
-</p>-->
-
-<div id="debug1" class="manual direction" style="position:fixed; left:5%; top:30%; color:grey;">
+<div id="debug1" class="manual direction" style="position:fixed; left:5%; top:25%; color:grey;">
   Direction: Base
 </div>
 
-<div id="debug2" class="manual distance" style="position:fixed; left:5%; top:34%; color:grey;">
+<div id="debug2" class="manual distance" style="position:fixed; left:5%; top:29%; color:grey;">
   Distance: 0
 </div>
 

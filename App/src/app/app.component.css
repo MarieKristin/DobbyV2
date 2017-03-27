@@ -3,6 +3,10 @@
   padding: 0;
 }
 
+#showMenu.inactive {
+  font-size: 8pt;
+}
+
 .menu {
   background: #47a3da;
   position: fixed;

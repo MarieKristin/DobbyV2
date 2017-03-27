@@ -16,6 +16,8 @@
     <file url="file://$PROJECT_DIR$/App/src/app/console/console.component.ts" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/App/src/app/graphics/graphics.component.html" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/App/src/app/graphics/graphics.component.ts" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/App/src/app/home/home.component.html" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/App/src/app/home/home.component.ts" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/App/src/assets/image_button.png" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/App/src/assets/image_button_bg.png" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/App/src/assets/logo.png" charset="UTF-8" />

@@ -30,3 +30,8 @@
   position: absolute;
   top: 70%;
 }
+
+#closeBtn {
+  position: absolute;
+  top: 80%;
+}
