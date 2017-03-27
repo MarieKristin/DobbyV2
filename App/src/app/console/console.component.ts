@@ -25,27 +25,27 @@ export class ConsoleComponent {
     this.loader[0].style.display = "block";
     this.helpEl[0].style.display = "none";
 
-    //this._ws = new WebSocket('ws://192.168.0.1:2609');
+    this._ws = new WebSocket('ws://192.168.0.1:2609');
 
-    //var timeOut = setTimeout(this.timeOutConnect, 3000, this._ws, this.loader[0]);
+    var timeOut = setTimeout(this.timeOutConnect, 3000, this._ws, this.loader[0]);
 
-    //this._ws.onopen = event => {
-    //  clearTimeout(timeOut);
+    this._ws.onopen = event => {
+      clearTimeout(timeOut);
       this.loader[0].style.display = "none";
       var menu = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('menuButton');
       menu[0].classList.add('inactive');
 
-    //  this._ws.onmessage = event => {
-    //    var jsonData = JSON.parse(event.data);
-    //    this.history.push(jsonData.Message);
-    //    setTimeout(this.updateScroll, 100, this.console[0]);
-    //  };
+      this._ws.onmessage = event => {
+        var jsonData = JSON.parse(event.data);
+        this.history.push(jsonData.Message);
+        setTimeout(this.updateScroll, 100, this.console[0]);
+      };
 
       for (var i=0; i< this.helpArr.length; i++) {
         this.helpArr[i].style.display = "block";
       }
       this.console[0].style.display = "block";
-    // }
+    }
   }
 
   public timeOutConnect(ws,loader) {
@@ -69,14 +69,14 @@ export class ConsoleComponent {
       return;
     }
     this.history.push('>' + this.command);
-    //this._ws.send(this.command);
+    this._ws.send(this.command);
 
     this.command = '';
   }
 
   private endWs() {
     var i;
-    //this._ws.close();
+    this._ws.close();
 
     for (i=0; i< this.helpArr.length; i++) {
       this.helpArr[i].style.display = "none";
