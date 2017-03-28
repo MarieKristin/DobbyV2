@@ -22,9 +22,9 @@ export class ConnectComponent {
 
   private joystick;
   private intervalID;
-  private sensStatus;
+  private sensStatus = 0;
+  private initSensor = 0;
 
-  // TODO: In einen Angular 2 Service schieben
   constructor() {  }
 
   public connect() {
@@ -33,34 +33,38 @@ export class ConnectComponent {
     this.helpEl[0].style.display = "none";
     this.loader[0].style.display = "block";
 
-    //this._ws = new WebSocket('ws://192.168.0.1:2609');
+    this._ws = new WebSocket('ws://192.168.0.1:2609');
 
-    //var timeOut = setTimeout(this.timeOutConnect, 3000, this._ws, this.loader[0]);
+    var timeOut = setTimeout(this.timeOutConnect, 3000, this._ws, this.loader[0]);
 
-    //this._ws.onopen = event => {
-    //  clearTimeout(timeOut);
+    this._ws.onopen = event => {
+      clearTimeout(timeOut);
       this.loader[0].style.display = "none";
       var menu = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('menuButton');
       menu[0].classList.add('inactive');
-    //  var initSensor = 0;
 
-    //  this._ws.onmessage = event => {
+      this._ws.onmessage = event => {
         //this.history.push('[SERVER] ' + event.data);
-          //if (initSensor == 0) {
-            //var jsonData = JSON.parse(event.data);
-            //var status = jsonData.SOMETHING;
-            //if (status.localeCompare('OFF') == 0) {
-            //  this.sensStatus = 0;
-            //} else this.sensStatus = 1;
-            //this.evaluateSensStatus();
-          //  initSensor++;
-          //}
-    //  };
+        if (this.initSensor == 0) {
+          var jsonData = JSON.parse(event.data);
+          var status = jsonData.Sensor;
+          if (status.localeCompare('ON') == 0) {
+            this.sensStatus = 0;
+          } else this.sensStatus = 1;
+          this.evaluateSensStatus();
+          this.initSensor++;
+        }
+      };
 
       for (i=0; i< this.arrChoose.length; i++) {
         this.arrChoose[i].style.display = "block";
       }
-    //}
+    }
+
+    this._ws.onerror = event => {
+      clearTimeout(timeOut);
+      this.timeOutConnect(this._ws, this.loader[0]);
+    }
   }
 
   public timeOutConnect(ws,loader) {
@@ -70,7 +74,7 @@ export class ConnectComponent {
   }
 
   public auto() {
-    //this._ws.send('automatik');
+    this._ws.send('automatik');
   }
 
   public man() {
@@ -93,13 +97,11 @@ export class ConnectComponent {
       stickRadius: 90
     });
 
-    //this.intervalID = setInterval(this.sendToMotor, 400, this.history, this.joystick, this._ws);
-    this.intervalID = setInterval(this.sendToMotor, 400, this.history, this.joystick);
+    this.intervalID = setInterval(this.sendToMotor, 400, this.history, this.joystick, this._ws);
 
-    //this._ws.send('manuell');
+    this._ws.send('manuell');
     //this.history.push('[CLIENT] ' + 'manuell');
 
-    //this.command = '';
     for (i=0; i< this.arrChoose.length; i++) {
       this.arrChoose[i].style.display = "none";
     }
@@ -108,8 +110,7 @@ export class ConnectComponent {
     }
   }
 
-  //private sendToMotor(historyList, joyStick, webSocket) {
-  private sendToMotor(historyList, joyStick) {
+  private sendToMotor(historyList, joyStick, webSocket) {
     var message;
     var dir = joyStick.getDirection();
     var dist = joyStick.getDistance();
@@ -189,26 +190,32 @@ export class ConnectComponent {
         break;
     }
 
-    //webSocket.send(message);
+    webSocket.send(message);
     //historyList.push('[CLIENT] ' + message);
   }
 
   public clickSens() {
-    //if (this.senStatus==0) this._ws.send('sensON');
-    //else this._ws.send('sensOFF');
+    if (this.sensStatus==0) {
+      this._ws.send('sensON');
+      this.sensStatus = 1;
+    } else {
+      this._ws.send('sensOFF');
+      this.sensStatus = 0;
+    }
+    this.initSensor = 0;
   }
 
   private evaluateSensStatus() {
-    //var checkBox = <HTMLCollectionOf<HTMLElements>>document.getElementsByClassName('checkSens');
-    //if (this.senStatus==0) {
-    //  checkBox[0].checked = false;
-    //} else checkBox[0].checked = true;
+    var checkBox = <HTMLCollectionOf<HTMLInputElement>>document.getElementsByClassName('checkSens');
+    if (this.sensStatus==0) {
+      checkBox[0].checked = false;
+    } else checkBox[0].checked = true;
   }
 
   private endWs() {
     var i;
     clearInterval(this.intervalID);
-    //this._ws.close();
+    this._ws.close();
 
     for (i=0; i< this.arrChoose.length; i++) {
       this.arrChoose[i].style.display = "none";
@@ -223,7 +230,7 @@ export class ConnectComponent {
 
     clearInterval(this.intervalID);
     this.joystick.destroy();
-    //this._ws.send('STOP');
+    this._ws.send('STOP');
     //this.history.push('[CLIENT] ' + 'STOP');
     for (i=0; i< this.arrMan.length; i++) {
       this.arrMan[i].style.display = "none";

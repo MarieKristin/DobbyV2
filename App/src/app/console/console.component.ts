@@ -46,6 +46,11 @@ export class ConsoleComponent {
       }
       this.console[0].style.display = "block";
     }
+
+    this._ws.onerror = event => {
+      clearTimeout(timeOut);
+      this.timeOutConnect(this._ws, this.loader[0]);
+    }
   }
 
   public timeOutConnect(ws,loader) {
