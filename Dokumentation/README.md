@@ -10,7 +10,7 @@ Dieser Ordner dient zur Speicherung diverser formaler Unterlagen.
 Es werden alle Logos derjenigen Firmen gelistet, die uns unterstützt haben.
  
 ## Dokumentationen
-Regelmäßige Updates unserer Projektfortschritte. Abrufbar als MS-Project-File und in .pdf-Form.
+Regelmäßige Updates unserer Projektplanung. Abrufbar als MS-Project-File und in .pdf-Form.
  
 
  
