@@ -11,8 +11,6 @@ export class ConnectComponent {
 
   private _ws: WebSocket;
 
-  //public command: string;
-
   public history: Array<string> = [];
 
   private arrChoose: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('hidden');
@@ -24,6 +22,7 @@ export class ConnectComponent {
 
   private joystick;
   private intervalID;
+  private sensStatus;
 
   // TODO: In einen Angular 2 Service schieben
   constructor() {  }
@@ -43,9 +42,19 @@ export class ConnectComponent {
       this.loader[0].style.display = "none";
       var menu = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('menuButton');
       menu[0].classList.add('inactive');
+    //  var initSensor = 0;
 
     //  this._ws.onmessage = event => {
         //this.history.push('[SERVER] ' + event.data);
+          //if (initSensor == 0) {
+            //var jsonData = JSON.parse(event.data);
+            //var status = jsonData.SOMETHING;
+            //if (status.localeCompare('OFF') == 0) {
+            //  this.sensStatus = 0;
+            //} else this.sensStatus = 1;
+            //this.evaluateSensStatus();
+          //  initSensor++;
+          //}
     //  };
 
       for (i=0; i< this.arrChoose.length; i++) {
@@ -67,13 +76,18 @@ export class ConnectComponent {
   public man() {
     var i = 0;
     var joyStickDiv = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('joyStickDiv');
+    var barMotor = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('bar-inner');
     this.joystick = new VirtualJoystick({
       container: joyStickDiv[0],
+      leftMotor: barMotor[0],
+      leftMotorD: barMotor[1],
+      rightMotor: barMotor[2],
+      rightMotorD: barMotor[3],
       mouseSupport: true,
       stationaryBase: true,
       direction: this.direction[0],
       distance: this.distance[0],
-      baseX: 175,
+      baseX: 180,
       baseY: 350,
       limitStickTravel: true,
       stickRadius: 90
@@ -118,11 +132,16 @@ export class ConnectComponent {
 
     if(dist == 0) {
       var string_dist:String = '00';
-      var other_motor:String = '00';
+      var other_motor1:String = '00';
+      var other_motor2:String = '00';
     } else {
       var string_dist:String = dist.toString(16).toUpperCase();
-      var calc_other_motor = Math.round(dist/2);
-      var other_motor:String = calc_other_motor.toString(16).toUpperCase();
+      var calc_other_motor = Math.round(dist/3);
+      if (calc_other_motor < 7) calc_other_motor = 7;
+      var other_motor1:String = calc_other_motor.toString(16).toUpperCase();
+      calc_other_motor = Math.round(dist/8);
+      if (calc_other_motor < 7) calc_other_motor = 7;
+      var other_motor2:String = calc_other_motor.toString(16).toUpperCase();
     }
 
     switch(dir) {
@@ -132,20 +151,32 @@ export class ConnectComponent {
       case 'up':
         message = 'AA-' + string_dist + '-55-' + string_dist;
         break;
-      case 'up-left': case 'up-l-left':
-        message = 'AA-' + other_motor + '-55-' + string_dist;
+      case 'up-left':
+        message = 'AA-' + other_motor1 + '-55-' + string_dist;
         break;
-      case 'up-right': case 'up-r-right':
-        message = 'AA-' + string_dist + '-55-' + other_motor;
+      case 'up-l-left':
+        message = 'AA-' + other_motor2 + '-55-' + string_dist;
+        break;
+      case 'up-right':
+        message = 'AA-' + string_dist + '-55-' + other_motor1;
+        break;
+      case 'up-r-right':
+        message = 'AA-' + string_dist + '-55-' + other_motor2;
         break;
       case 'down':
         message = '55-' + string_dist + '-AA-' + string_dist;
         break;
-      case 'down-left': case 'down-l-left':
-        message = '55-' + other_motor + '-AA-' + string_dist;
+      case 'down-left':
+        message = '55-' + other_motor1 + '-AA-' + string_dist;
         break;
-      case 'down-right': case 'down-r-right':
-        message = '55-' + string_dist + '-AA-' + other_motor;
+      case 'down-l-left':
+        message = '55-' + other_motor2 + '-AA-' + string_dist;
+        break;
+      case 'down-right':
+        message = '55-' + string_dist + '-AA-' + other_motor1;
+        break;
+      case 'down-r-right':
+        message = '55-' + string_dist + '-AA-' + other_motor2;
         break;
       case 'left':
         message = '55-' + string_dist + '-55-' + string_dist;
@@ -160,6 +191,18 @@ export class ConnectComponent {
 
     //webSocket.send(message);
     //historyList.push('[CLIENT] ' + message);
+  }
+
+  public clickSens() {
+    //if (this.senStatus==0) this._ws.send('sensON');
+    //else this._ws.send('sensOFF');
+  }
+
+  private evaluateSensStatus() {
+    //var checkBox = <HTMLCollectionOf<HTMLElements>>document.getElementsByClassName('checkSens');
+    //if (this.senStatus==0) {
+    //  checkBox[0].checked = false;
+    //} else checkBox[0].checked = true;
   }
 
   private endWs() {

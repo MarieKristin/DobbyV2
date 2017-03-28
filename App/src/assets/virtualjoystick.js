@@ -2,6 +2,10 @@ var VirtualJoystick	= function(opts)
 {
 	opts			= opts			|| {};
 	this._container		= opts.container	|| document.body;
+	this._barMotorR = opts.rightMotor !== undefined ? opts.rightMotor : false;
+	this._barMotorRD = opts.rightMotorD !== undefined ? opts.rightMotorD : false;
+	this._barMotorL = opts.leftMotor !== undefined ? opts.leftMotor : false;
+  this._barMotorLD = opts.leftMotorD !== undefined ? opts.leftMotorD : false;
 	this._strokeStyle	= opts.strokeStyle	|| 'cyan';
 	this._stickEl		= opts.stickElement	|| this._buildJoystickStick();
 	this._baseEl		= opts.baseElement	|| this._buildJoystickBase();
@@ -203,23 +207,6 @@ VirtualJoystick.prototype.degrees = function(radians) {
   return radians * 180 / Math.PI;
 }
 
-/*VirtualJoystick.prototype.up = function(deltaX, deltaY) {
-  if( deltaY >= 0 ) return false;
-  if( deltaX == 0 ) return true;
-  if( Math.atan( Math.abs(deltaX)/Math.abs(deltaY) ) > 27 ) return false;
-  return true;
-}
-
-VirtualJoystick.prototype.upR = function(deltaX, deltaY) {
-  if( deltaY >= 0 ) return false;
-  if( Math.atan( Math.abs(deltaX)/Math.abs(deltaY)) > (18+27) ) return false;
-  return true;
-} //needs to be asked for "up" before
-
-VirtualJoystick.prototype.upRR = function(deltaX, deltaY) {
-  if( deltaY >= 0 ) return false;
-}*/
-
 //////////////////////////////////////////////////////////////////////////////////
 //										//
 //////////////////////////////////////////////////////////////////////////////////
@@ -346,31 +333,54 @@ VirtualJoystick.prototype.getDirection = function() {
       break;
   }
 
-  /*if ( this.up(deltaX, deltaY) ) {            //so the stick is somewhere in the upper part
-    if ( this.left(deltaX, deltaY) ) {        //so the stick is "up left"
-      dir = 'up-left';
-    } else if ( this.right(deltaX, deltaY) ) {//so the stick is "up right"
-      dir = 'up-right';
-    } else {                                  //so the stick is "up"
-      dir = 'up';
-    }
-  } else if ( this.down(deltaX, deltaY) ) {   //so the stick is somewhere in the lower part
-    if ( this.left(deltaX, deltaY) ) {        //so the stick is "down left"
-        dir = 'down-left';
-      } else if ( this.right(deltaX, deltaY) ) {//so the stick is "down right"
-        dir = 'down-right';
-      } else {                                  //so the stick is "down"
-      dir = 'down';
-    }
-  } else if ( this.left(deltaX, deltaY) ) {   //so the stick is "left"
-    dir = 'left';
-  } else if ( this.right(deltaX, deltaY) ) {  //so the stick is "right"
-    dir = 'right';
-  }                                           //if nothing is fitting for the direction, this means
-                                              //either something went horribly wrong
-                                              //or the stick is in default position
-  */
+  this.updateMotorBars();
   return dir;
+}
+
+VirtualJoystick.prototype.updateMotorBars = function() {
+  var dist = this.getDistance();
+  var switch_dist = Math.ceil(dist/9);
+  if(switch_dist == 1 || switch_dist == 0) {
+    dist = 0;
+  } else {
+    dist = (switch_dist*90)/10;
+  }
+  dist = Math.ceil(dist*(10/9));
+  /*
+   *  90 - 100%   45 - 50%
+   *  81 -  90%   36 - 40%
+   *  72 -  80%   27 - 30%
+   *  63 -  70%   18 - 20%
+   *  54 -  60%   00 -  0%
+   */
+
+  if (this._barMotorR == false || this._barMotorRD == false) {
+    //it's not defined so nothing is supposed to happen
+  } else {
+    if (this._rightMotor <= 0) {
+      this._barMotorR.style.height = "0%";
+      if(this._rightMotor == 0) {
+        this._barMotorRD.style.height = "0%";
+      } else this._barMotorRD.style.height = (dist*this._rightMotor*(-1)/100) + "%";
+    } else {
+      this._barMotorRD.style.height = "0%";
+      this._barMotorR.style.height = (dist*this._rightMotor/100) + "%";
+    }
+  }
+
+  if (this._barMotorL == false || this._barMotorLD == false) {
+    //it's not defined so nothing is supposed to happen
+  } else {
+    if (this._leftMotor <= 0) {
+      this._barMotorL.style.height = "0%";
+      if(this._leftMotor == 0) {
+        this._barMotorLD.style.height = "0%";
+      } else this._barMotorLD.style.height = (dist*this._leftMotor*(-1)/100) + "%";
+    } else {
+      this._barMotorLD.style.height = "0%";
+      this._barMotorL.style.height = (dist*this._leftMotor/100) + "%";
+    }
+  }
 }
 
 VirtualJoystick.prototype.getDistance = function() {
@@ -381,6 +391,8 @@ VirtualJoystick.prototype.getDistance = function() {
   return stickDistance;
 }
 
+this._leftMotor = 0;
+this._rightMotor = 0;
 VirtualJoystick.prototype._calculateDirection = function() {
   var dir = 'Base';
 
@@ -391,68 +403,70 @@ VirtualJoystick.prototype._calculateDirection = function() {
   switch(this.getDir(deltaX,deltaY)) {
     case 0:
       dir = 'up';
+      this._leftMotor = this._rightMotor = 100;
       break;
     case 1:
       dir = 'up-right';
+      this._leftMotor = 100;
+      this._rightMotor = Math.round(100/3);
       break;
     case 2:
       dir = 'up-r-right';
+      this._leftMotor = 100;
+      this._rightMotor = Math.round(100/8);
       break;
     case 3:
       dir = 'right';
+      this._leftMotor = 100;
+      this._rightMotor = -100;
       break;
     case 4:
       dir = 'down-r-right';
+      this._leftMotor = -100;
+      this._rightMotor = Math.round(-100/8);
       break;
     case 5:
       dir = 'down-right';
+      this._leftMotor = -100;
+      this._rightMotor = Math.round(-100/3);
       break;
     case 6:
       dir = 'down';
+      this._leftMotor = this._rightMotor = -100;
       break;
     case 7:
       dir = 'down-left';
+      this._rightMotor = -100;
+      this._leftMotor = Math.round(-100/3);
       break;
     case 8:
       dir = 'down-l-left';
+      this._rightMotor = -100;
+      this._leftMotor = Math.round(-100/8);
       break;
     case 9:
       dir = 'left';
+      this._rightMotor = 100;
+      this._leftMotor = -100;
       break;
     case 10:
       dir = 'up-l-left';
+      this._rightMotor = 100;
+      this._leftMotor = Math.round(100/8);
       break;
     case 11:
       dir = 'up-left';
+      this._rightMotor = 100;
+      this._leftMotor = Math.round(100/3);
       break;
     default:
+      this._rightMotor = 0;
+      this._leftMotor = 0;
       //do Nothing because it's either the center or something went wrong
       break;
   }
-  /*if ( this.up(deltaX, deltaY) ) {            //so the stick is somewhere in the upper part
-    if ( this.left(deltaX, deltaY) ) {        //so the stick is "up left"
-      dir = 'up-left';
-    } else if ( this.right(deltaX, deltaY) ) {//so the stick is "up right"
-      dir = 'up-right';
-    } else {                                  //so the stick is "up"
-      dir = 'up';
-    }
-  } else if ( this.down(deltaX, deltaY) ) {   //so the stick is somewhere in the lower part
-    if ( this.left(deltaX, deltaY) ) {        //so the stick is "down left"
-        dir = 'down-left';
-      } else if ( this.right(deltaX, deltaY) ) {//so the stick is "down right"
-        dir = 'down-right';
-      } else {                                  //so the stick is "down"
-      dir = 'down';
-    }
-  } else if ( this.left(deltaX, deltaY) ) {   //so the stick is "left"
-    dir = 'left';
-  } else if ( this.right(deltaX, deltaY) ) {  //so the stick is "right"
-    dir = 'right';
-  }                                           //if nothing is fitting for the direction, this means
-                                              //either something went horribly wrong
-                                              //or the stick is in default position
-  */
+
+  this.updateMotorBars();
 
   if (this._direction != false) {
     this._direction.innerHTML = "Direction: " + dir;
@@ -461,9 +475,6 @@ VirtualJoystick.prototype._calculateDirection = function() {
     var stickDistance = Math.sqrt( (deltaX * deltaX) + (deltaY * deltaY) );
     this._distance.innerHTML = "Distance: " + Math.round(stickDistance);
   }
-
-  //return dir;
-  //(<HTMLElement>document.getElementById('debug1')).innerHTML = "Direction: " + dir;
 }
 
 //////////////////////////////////////////////////////////////////////////////////

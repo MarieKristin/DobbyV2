@@ -31,7 +31,49 @@
 
 <div class="manual joyStickDiv"></div>
 
+<div class="leftMotor">
+  <div class="bar-wrapper rightMotorUp manual">
+    <div class="bar-container">
+      <div class="bar-background"></div>
+      <div class="bar-inner" style="height: 0%; bottom: 0;">0</div>
+      <div class="bar-foreground"></div>
+    </div>
+  </div>
+  <div class="bar-wrapper rightMotorDown bar-wrapper-down manual">
+    <div class="bar-container-down">
+      <div class="bar-background"></div>
+      <div class="bar-inner bar-inner-down" style="height: 0%; bottom: 0;">0</div>
+      <div class="bar-foreground"></div>
+    </div>
+  </div>
+</div>
+
+<div class="rightMotor">
+  <div class="bar-wrapper rightMotorUp manual">
+    <div class="bar-container">
+      <div class="bar-background"></div>
+      <div class="bar-inner" style="height: 0%; bottom: 0;">0</div>
+      <div class="bar-foreground"></div>
+    </div>
+  </div>
+  <div class="bar-wrapper rightMotorDown bar-wrapper-down manual">
+    <div class="bar-container-down">
+      <div class="bar-background"></div>
+      <div class="bar-inner bar-inner-down" style="height: 0%; bottom: 0;">0</div>
+      <div class="bar-foreground"></div>
+    </div>
+  </div>
+</div>
+
 <button type="button" class="btn manual" (click)="back()">Zur&uuml;ck</button>
+
+<div class="manual switchDiv">
+  <div class="switchFloatie">Sensor</div>
+  <div class="switch switchFloatie">
+    <input type="checkbox" class="checkSens" (click)="clickSens()" checked />
+    <label></label>
+  </div>
+</div>
 
 <ul>
   <li *ngFor="let h of history">{{ h }}</li>

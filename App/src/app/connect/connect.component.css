@@ -23,8 +23,8 @@ p {
 
 .btn.manual {
   position: absolute;
-  top: 500px;
-  left: 20%;
+  top: 80%;
+  left: 5%;
   z-index: 100000;
 }
 
@@ -35,3 +35,301 @@ p {
   width: 100%;
   height: 100%;
 }
+
+.switchDiv {
+  position: absolute;
+  top: 80%;
+  left: 55%;
+}
+
+.switchFloatie {
+  float: left;
+}
+
+.switch {
+  /*margin: 50px auto;*/
+  width: 80px;
+  height: 80px;
+  /*position: absolute;
+  top: 70%;
+  left: 70%;*/
+}
+
+.switch label {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: block;
+  border-radius: 50%;
+  background: #eaeaea;
+  box-shadow:
+      0 3px 5px rgba(0,0,0,0.25),
+      inset 0 1px 0 rgba(255,255,255,0.3),
+      inset 0 -5px 5px rgba(100,100,100,0.1),
+      inset 0 5px 5px rgba(255,255,255,0.3);
+}
+
+.switch label:after {
+  content: "";
+  position: absolute;
+  top: -8%; right: -8%; bottom: -8%; left: -8%;
+  z-index: -1;
+  border-radius: inherit;
+  background: #ddd;
+  background: -moz-linear-gradient(#ccc, #fff);
+  background: -ms-linear-gradient(#ccc, #fff);
+  background: -o-linear-gradient(#ccc, #fff);
+  background: -webkit-gradient(linear, 0 0, 0 100%, from(#ccc), to(#fff));
+  background: -webkit-linear-gradient(#ccc, #fff);
+  background: linear-gradient(#ccc, #fff);
+  box-shadow:
+    inset 0 2px 1px rgba(0,0,0,0.15),
+    0 2px 5px rgba(200,200,200,0.1);
+}
+
+.switch label:before {
+  content: "";
+  position: absolute;
+  width: 20%;
+  height: 20%;
+  border-radius: inherit;
+  left: 40%;
+  top: 40%;
+  background: #969696;
+  background: radial-gradient(40% 35%, #ccc, #969696 60%);
+  box-shadow:
+      inset 0 2px 4px 1px rgba(0,0,0,0.3),
+      0 1px 0 rgba(255,255,255,1),
+      inset 0 1px 0 white;
+}
+
+.switch input {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  opacity: 0;
+  z-index: 100;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.switch input:checked ~ label {
+  background: #dedede;
+  background: -moz-linear-gradient(#dedede, #fdfdfd);
+  background: -ms-linear-gradient(#dedede, #fdfdfd);
+  background: -o-linear-gradient(#dedede, #fdfdfd);
+  background: -webkit-gradient(linear, 0 0, 0 100%, from(#dedede), to(#fdfdfd));
+  background: -webkit-linear-gradient(#dedede, #fdfdfd);
+  background: linear-gradient(#dedede, #fdfdfd);
+}
+
+.switch input:checked ~ label:before {
+  background: #25d025;
+  background: radial-gradient(40% 35%, #5aef5a, #25d025 60%);
+  box-shadow:
+      inset 0 3px 5px 1px rgba(0,0,0,0.1),
+      0 1px 0 rgba(255,255,255,0.4),
+      0 0 10px 2px rgba(0, 210, 0, 0.5);
+}
+
+
+
+
+.rightMotor {
+  float: right;
+}
+
+.leftMotor {
+  float: left;
+}
+
+
+/*********************
+ * Graph Bars styles *
+ *********************/
+
+/* Bar wrapper - hides the inner bar when it goes below the bar, required */
+.bar-wrapper {
+    overflow: hidden;
+}
+/* Bar container - this guy is a real parent of a bar's parts - they all are positioned relative to him */
+.bar-container, .bar-container-down {
+    position: relative;
+    margin-top: 2.5em; /* should be at least equal to the top offset of background casing */
+    /* because back casing is positioned higher than actual bar */
+    width: 12.5em; /* required, we have to define the width of a bar */
+}
+
+/** BACK CASING **/
+/* Back panel */
+.bar-background {
+    width: 10em;
+    height: 100%;
+    position: absolute;
+    top: -2.5em;
+    left: 2.5em;
+    z-index: 1; /* just for reference */
+}
+
+.bar-background:before,
+.bar-background:after {
+    content: "";
+    position: absolute;
+}
+
+/* Bottom panel */
+.bar-background:before {
+    bottom: -2.5em;
+    right: 1.25em;
+    width: 10em;
+    height: 2.5em;
+	-webkit-backface-visibility: hidden;
+    -webkit-transform: skew(-45deg);
+    -moz-transform: skew(-45deg);
+    -o-transform: skew(-45deg);
+    -ms-transform: skew(-45deg);
+    transform: skew(-45deg);
+}
+
+/* Left back panel */
+.bar-background:after {
+    top: 1.25em;
+    right: 10em;
+    width: 2.5em;
+    height: 100%;
+	-webkit-backface-visibility: hidden;
+    /* skew only the Y-axis */
+    -webkit-transform: skew(0deg, -45deg);
+    -moz-transform: skew(0deg, -45deg);
+    -o-transform: skew(0deg, -45deg);
+    -ms-transform: skew(0deg, -45deg);
+    transform: skew(0deg, -45deg);
+}
+
+/** FRONT CASING **/
+/* Front panel */
+.bar-foreground {
+    z-index: 3; /* be above .bar-background and .bar-inner */
+}
+.bar-foreground,
+.bar-inner {
+    position: absolute;
+    width: 10em;
+    height: 100%;
+    top: 0;
+    left: 0;
+}
+
+.bar-foreground:before,
+.bar-foreground:after,
+.bar-inner:before,
+.bar-inner:after {
+    content: "";
+    position: absolute;
+}
+
+/* Right front panel */
+.bar-foreground:before,
+.bar-inner:before {
+    top: -1.25em;
+    right: -2.5em;
+    width: 2.5em;
+    height: 100%;
+    background-color: rgba(160, 160, 160, .27);
+
+    -webkit-transform: skew(0deg, -45deg);
+    -moz-transform: skew(0deg, -45deg);
+    -o-transform: skew(0deg, -45deg);
+    -ms-transform: skew(0deg, -45deg);
+    transform: skew(0deg, -45deg);
+}
+
+/* Top front panel */
+.bar-foreground:after,
+.bar-inner:after {
+    top: -2.5em;
+    right: -1.25em;
+    width: 100%;
+    height: 2.5em;
+    background-color: rgba(160, 160, 160, .2);
+
+    -webkit-transform: skew(-45deg);
+    -moz-transform: skew(-45deg);
+    -o-transform: skew(-45deg);
+    -ms-transform: skew(-45deg);
+    transform: skew(-45deg);
+}
+
+/** BAR's inner block **/
+.bar-inner {
+    z-index: 2; /* to be above .bar-background */
+    top: auto; /* reset position top */
+    background-color: rgba(5, 62, 123, .6);
+    height: 0;
+    bottom: -2.5em;
+    color: transparent; /* hide text values */
+
+    -webkit-transition: height 0.8s ease-in-out, bottom 0.8s ease-in-out;
+    -moz-transition: height 0.8s ease-in-out, bottom 0.8s ease-in-out;
+    -o-transition: height 0.8s ease-in-out, bottom 0.8s ease-in-out;
+    -ms-transition: height 0.8s ease-in-out, bottom 0.8s ease-in-out;
+    transition: height 0.8s ease-in-out, bottom 0.8s ease-in-out;
+}
+
+.bar-inner-down {
+  top: 0%;
+  bottom: -2.5em;
+}
+
+/* Right panel */
+.bar-inner:before {
+    background-color: rgba(5, 62, 123, .6);
+}
+
+/* Top panel */
+.bar-inner:after {
+    background-color: rgba(47, 83, 122, .7);
+}
+
+/****************
+ * SIZES        *
+ ****************/
+ /* Size of the Graph */
+.bar-container, .bar-container-down {
+  font-size: 4px;
+}
+/* Height of Bars */
+.bar-container, .bar-container-down {
+  height: 40em;
+}
+
+/****************
+ *    Colors    *
+ ****************/
+/* Bar's Back side */
+.bar-background {
+  background-color: rgba(160, 160, 160, .1);
+}
+/* Bar's Bottom side */
+.bar-background:before {
+  background-color: rgba(160, 160, 160, .2);
+}
+/* Bar's Left Back side */
+.bar-background:after {
+  background-color: rgba(160, 160, 160, .05);
+}
+/* Bar's Front side */
+.bar-foreground {
+  background-color: rgba(160, 160, 160, .1);
+}
+/* Bar's inner block */
+.bar-inner,
+.bar-inner:before { background-color: rgba(65, 170, 170, .6); }
+.bar-inner:after { background-color: rgba(0, 100, 110, .7); }
+
+.bar-inner-down,
+.bar-inner-down:before { background-color: rgba(175, 35, 95, .6); }
+.bar-inner-down:after { background-color: rgba(100, 25, 70, .7); }
