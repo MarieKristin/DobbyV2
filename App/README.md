@@ -1,7 +1,7 @@
 # App 
 
 ## Version I
- +Als begleitendes Projekt im "SoftwareEngineering I"-Modul wurde eine erste Version der App entwickelt. Diese ist <a href="https://github.com/MarieKristin/DobbyApp">hier</a> zu finden und basiert auf Native Android. 
+ Als begleitendes Projekt im "SoftwareEngineering I"-Modul wurde eine erste Version der App entwickelt. Diese ist <a href="https://github.com/MarieKristin/DobbyApp">hier</a> zu finden und basiert auf Native Android. 
  
  ## Version II
  Aufgrund zahlreicher Änderungen der Anforderungen, wie zum Beispeil dem Erstellen eines 3D-Modells des Roboters, sind die technischen Hintergründe neu konzipiert worden und es wird an einer neuen App gearbeitet.
