@@ -7,7 +7,7 @@ Dieser Ordner dient zur Speicherung diverser formaler Unterlagen.
 Übersicht des Aufbaus der Verwaltungsapp.
  
 ## Firmen
-Es werden alle Firmenlogos gelistet, die uns unterstützt haben.
+Es werden alle Logos derjenigen Firmen gelistet, die uns unterstützt haben.
  
 ## Dokumentationen
 Regelmäßige Updates unserer Projektfortschritte. Abrufbar als MS-Project-File und in .pdf-Form.
