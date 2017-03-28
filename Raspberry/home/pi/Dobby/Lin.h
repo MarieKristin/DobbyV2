@@ -22,7 +22,8 @@ public:
 	void setMessageFrame(int data0, int data1, int data2, int data3, int data4,
 		int data5, int data6, int data7, int data8);
 	void getFrame();
-	void startMotors(int directionLeft, int velocityLeft, int directionRight, int velocityRight);
+	void startMotorsInit();
+	void startMotorsRoutine(int directionLeft, int velocityLeft, int directionRight, int velocityRight);
 	void stopMotors();
 	void interpretControlString(std::string inputString);
 	//Frame initFrame;

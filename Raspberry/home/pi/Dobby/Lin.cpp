@@ -85,18 +85,20 @@ void Lin::interpretControlString(std::string inputString){
 		puffer  << (inputString.substr(9,2));
 		puffer  >> std::hex >> velocityRight;
 //	std::cout << directionLeft << " " << velocityLeft << " " << directionRight << " " << velocityRight << " \n";
-	startMotors(directionLeft, velocityLeft, directionRight, velocityRight);
+	startMotorsRoutine(directionLeft, velocityLeft, directionRight, velocityRight);
 
 }
 
-void Lin::startMotors(int directionLeft, int velocityLeft, int directionRight,
-	int velocityRight) {
+
+
+
+//void Lin::startMotorsInit(int directionLeft, int velocityLeft, int directionRight,int velocityRight) {
+void Lin::startMotorsInit(){
 	setInitialContents();
 	if (ioControl->getHandle() < 0) {
 		ioControl->openSerial();
 	}
-	messageFrame.setContent(0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5,
-		directionRight, velocityRight, 0xFF);
+	messageFrame.setContent(0x3C, 0x84, 0x55, 0x00, 0x55, 0xA5, 0xAA, 0x00, 0xFF);
 	sendWakeUp();
 	ioControl->setSleep(310000);  //Warte 310ms
 	sendInitFrame();
@@ -108,6 +110,13 @@ void Lin::startMotors(int directionLeft, int velocityLeft, int directionRight,
 	ioControl->setDelay(2000);
 }
 
+void Lin::startMotorsRoutine(int directionLeft, int velocityLeft, int directionRight, int velocityRight){
+	messageFrame.setContent(0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5,
+		directionRight, velocityRight, 0xFF);
+	sendMessageFrame();
+}
+
+
 void Lin::setInitialContents() {
 	initFrame.setID(init);
 	messageFrame.setID(message);
@@ -117,9 +126,11 @@ void Lin::setInitialContents() {
 	messageFrame.setContent(0x3C, 0x84, 0xAA, 0x00, 0x55, 0xA5, 0xAA, 0x00, 0xFF); //Checksum 2B
 }
 
+
 void Lin::sendSyncByte() {
 	ioControl->writeByte(0x55);
 }
+
 
 void Lin::sendWakeUp() {
 	ioControl->closeSerial();
@@ -132,6 +143,7 @@ void Lin::sendWakeUp() {
 	ioControl->setSleep(150000);
 }
 
+
 void Lin::sendBreak() {
 	ioControl->closeSerial();
 	ioControl->setToOutput(14);
@@ -142,6 +154,7 @@ void Lin::sendBreak() {
 	ioControl->setToAlternative(14);
 	ioControl->openSerial();
 }
+
 
 void Lin::sendInitFrame() {
 	sendBreak();

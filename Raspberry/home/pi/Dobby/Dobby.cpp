@@ -117,7 +117,7 @@ unsigned int manuelleMotorroutine(struct libwebsocket *wsi, unsigned char *data,
 	char *reply_str;
 	char *reply;
 	int reply_len;
-	asprintf(&reply, "You typed \"%s\"", data); 
+	asprintf(&reply, "You typed \"%s\"", data);
 
 	int test = s_data.compare("STOP");
 
@@ -125,11 +125,38 @@ unsigned int manuelleMotorroutine(struct libwebsocket *wsi, unsigned char *data,
 		lin->stopMotors();
 		manuellerModus = false;
 	}
+
+	test = s_data.compare("sensON");
+	const char *status = "";
+	int hilf = -1;
+	if(test == 0){
+		if((hilf = sensor->sockfd) == 0){
+			sensor->initialize();
+			if(sensor->sockfd == 7){
+				sensor->startRoutine();
+				status = "OK";
+			}
+			else{
+				status = "Failed";
+			}
+		}
+	}
+
+	test = s_data.compare("sensOFF");
+	if(test == 0){
+		sensor->closeSensor();
+	}
+
 	else{
 		lin->interpretControlString(s_data);
 		}
-
+	if(hilf == -1){
 	reply_obj = json_pack("{s:s, s:s}", "Type", "standard", "Message", reply); // Erstellung JSON-Objekt -> "Type standart", "Message REPLY"
+		}
+	else{
+	reply_obj = json_pack("{s:s, s:s, s:s}", "Type", "standard", "Message", reply, "Sensor", status);
+		}
+
 	reply_str = json_dumps(reply_obj, 0);
 	reply_len = strlen(reply_str); 						// Länge der Antwort
 	memcpy(buffer, reply_str, reply_len); 					// Kopie an Zieladresse "buffer" von Antwort-Pointer, Länge der Antwort
@@ -156,14 +183,25 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	char *reply;
 	int reply_len;
 	int ausgefuehrt = 0;
+	int hilf = -1;
+	//char *sensHilfe;
 	asprintf(&reply, "You typed \"%s\"", data);				// Füge zu den eigegebenen Daten "you typed" hinzu und schreibe in reply
 
 	string manuell = "manuell";
 	int test = s_data.compare(manuell); 					// Vergleiche ob das eigegebene Wort dem Wert von "lampe" entspricht
+	const char* sensorHilf;
 	if (test == 0) {
+		lin->startMotorsInit();
 		manuellerModus = true;
+		hilf = sensor->getSensInit();
+		if(hilf != 7){
+			sensorHilf = "sensOFF";
+		}
+		else{
+			sensorHilf = "sensON";
+		}
 	}
-	test = 7; 
+	test = 7;
 	string automatik = "automatik";							// == 0 ? -> ist gleich
 	test = s_data.compare(automatik);
 	if (test == 0) {
@@ -176,18 +214,6 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	if (test == 0) {
 		system("/etc/init.d/livestream.sh stop &");
 		ioControl->blinken(23, 200);
-	}
-	test = 7;
-	string gelb = "TestGe";
-	test = s_data.compare(gelb);
-	if (test == 0) {
-		ioControl->blinken(25, 200);
-	}
-	test = 7;
-	string gruen = "TestGr";
-	test = s_data.compare(gruen);
-	if (test == 0) {
-		ioControl->blinken(24, 200);
 	}
 	test = 7;
 	string start = "Start";
@@ -266,7 +292,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		ioControl->writePin(23, 1);
 		ioControl->writePin(25, 1);
 
-		lin->startMotors(0x55, 0x30, 0x55, 0x30);
+		lin->startMotorsRoutine(0x55, 0x30, 0x55, 0x30);
 
 		ioControl->writePin(25, 0);
 		ioControl->writePin(23, 0);
@@ -285,7 +311,12 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	}
 	cover = true;
 	// Test Ende
+	if(hilf == -1 ){
 	reply_obj = json_pack("{s:s, s:s}", "Type", "standard", "Message", reply); // Erstellung JSON-Objekt -> "Type standart", "Message REPLY"
+	}
+	else{
+	reply_obj = json_pack("{s:s, s:s, s:s}", "Type", "standard", "Message", reply, "Sensor", sensorHilf);
+	}
 	reply_str = json_dumps(reply_obj, 0);
 	reply_len = strlen(reply_str); 						// Länge der Antwort
 	memcpy(buffer, reply_str, reply_len); 					// Kopie an Zieladresse "buffer" von Antwort-Pointer, Länge der Antwort

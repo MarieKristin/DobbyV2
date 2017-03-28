@@ -48,6 +48,10 @@ void IOControl::setDelay(int duration){
 	gpioDelay(duration);
 }
 
+void IOControl::setDelay1(){
+	gpioSleep(PI_TIME_RELATIVE, 5, 0);
+}
+
 void IOControl::setSleep(int duration){
 	gpioSleep(PI_TIME_RELATIVE, 0, duration);
 }
