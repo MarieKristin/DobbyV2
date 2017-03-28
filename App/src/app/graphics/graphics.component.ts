@@ -12,13 +12,17 @@ export class GraphicsComponent implements AfterViewInit {
   private loader: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('loader');
 
   constructor(sanitizer: DomSanitizer) {
-    this.url = sanitizer.bypassSecurityTrustResourceUrl('http://192.168.0.1/www/html/index.html');
+    //this.url = sanitizer.bypassSecurityTrustResourceUrl('http://192.168.0.1/modell/index.html');
+    this.url = sanitizer.bypassSecurityTrustResourceUrl('http://192.168.0.1:2209/stream_simple.html');
+
   }
 
   public ngAfterViewInit() {
     var ws = new WebSocket('ws://192.168.0.1:2609');
 
     ws.onopen = event => {
+      clearTimeout(timeOutConnect);
+
       ws.onmessage = event => {
         clearTimeout(timeOut);
         this.loader[0].style.display = "none";
@@ -27,16 +31,19 @@ export class GraphicsComponent implements AfterViewInit {
       };
 
       ws.send('test');
-      var timeOut = setTimeout(this.errorHappened, 3000, ws, document);
+      var timeOut = setTimeout(this.errorHappened, 3000, ws, document, this.loader[0]);
     }
 
     ws.onerror = event => {
-      this.errorHappened(ws, document);
+      clearTimeout(timeOutConnect);
+      this.errorHappened(ws, document, this.loader[0]);
     }
+
+    var timeOutConnect = setTimeout(this.errorHappened, 3000, ws, document, this.loader[0]);
   }
 
-  public errorHappened(ws, document) {
-    this.loader[0].style.display = "none";
+  public errorHappened(ws, document, loader) {
+    loader.style.display = "none";
     (<HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('errorDiv'))[0].style.display = "block";
     ws.close();
   }

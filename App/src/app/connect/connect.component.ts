@@ -48,7 +48,7 @@ export class ConnectComponent {
         if (this.initSensor == 0) {
           var jsonData = JSON.parse(event.data);
           var status = jsonData.Sensor;
-          if (status.localeCompare('ON') == 0) {
+          if (status.localeCompare('OFF') == 0) {
             this.sensStatus = 0;
           } else this.sensStatus = 1;
           this.evaluateSensStatus();
