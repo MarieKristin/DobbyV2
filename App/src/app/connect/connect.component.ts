@@ -32,16 +32,16 @@ export class ConnectComponent {
 
     this.helpEl[0].style.display = "none";
     this.loader[0].style.display = "block";
+    var menu = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('menuButton');
+    menu[0].classList.add('inactive');
 
     this._ws = new WebSocket('ws://192.168.0.1:2609');
 
-    var timeOut = setTimeout(this.timeOutConnect, 3000, this._ws, this.loader[0]);
+    var timeOut = setTimeout(this.timeOutConnect, 3000, this._ws, this.loader[0], menu[0]);
 
     this._ws.onopen = event => {
       clearTimeout(timeOut);
       this.loader[0].style.display = "none";
-      var menu = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('menuButton');
-      menu[0].classList.add('inactive');
 
       this._ws.onmessage = event => {
         //this.history.push('[SERVER] ' + event.data);
@@ -63,13 +63,14 @@ export class ConnectComponent {
 
     this._ws.onerror = event => {
       clearTimeout(timeOut);
-      this.timeOutConnect(this._ws, this.loader[0]);
+      this.timeOutConnect(this._ws, this.loader[0], menu[0]);
     }
   }
 
-  public timeOutConnect(ws,loader) {
+  public timeOutConnect(ws,loader,menu) {
     ws.close();
     loader.style.display = "none";
+    menu.classList.remove('inactive');
     (<HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('error'))[0].style.display = "block";
   }
 
