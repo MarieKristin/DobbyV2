@@ -1,0 +1,14 @@
+﻿"Symbol";"Value";"Unit";
+"REFERENCE";"05B-1";"";
+"TraceParts.PartVersion";"1.0.8";"";
+"SUPPLIER";"iwis";"";
+"TraceParts.PartStatus";"Published";"";
+"TraceParts.PartNumber";"30-17082015-094031";"";
+"TraceParts.PartLanguage";"de";"";
+"DESIGN";"Rollenketten Typ 05B-1";"";
+"TraceParts.InstanceId";"30-17082015-094031714N81TI2UT41S22HJXAV0W7R";"";
+"TraceParts.PartTitle";"05B";"";
+"OMNICLASS23";"23.27.35.15";"";
+"TRACEPARTS";"TRACEPARTS";"";
+"TraceParts.PartStatusId";"";"";
+"TraceParts.ClassPath";"IWIS:/F_IWIS/IWIS.010/IWIS.010.010/IWIS.010.010.010/30-17082015-094031";"";
