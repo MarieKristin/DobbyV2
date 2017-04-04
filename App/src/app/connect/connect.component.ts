@@ -141,9 +141,11 @@ export class ConnectComponent {
       var calc_other_motor = Math.round(dist/3);
       if (calc_other_motor < 7) calc_other_motor = 7;
       var other_motor1:String = calc_other_motor.toString(16).toUpperCase();
+      if (other_motor1.length == 1) other_motor1 = '0' + other_motor1;
       calc_other_motor = Math.round(dist/8);
       if (calc_other_motor < 7) calc_other_motor = 7;
       var other_motor2:String = calc_other_motor.toString(16).toUpperCase();
+      if (other_motor2.length == 1) other_motor2 = '0' + other_motor2;
     }
 
     switch(dir) {
