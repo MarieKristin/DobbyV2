@@ -23,15 +23,24 @@ public:
 		int data5, int data6, int data7, int data8);
 	void getFrame();
 	void startMotorsInit();
-	void startMotorsRoutine(int directionLeft, int velocityLeft, int directionRight, int velocityRight);
+	void startMotorsRoutine();
 	void stopMotors();
-	void interpretControlString(std::string inputString);
-	//Frame initFrame;
-	//Frame activationFrame;
-	//Frame messageFrame;
+	int interpretControlString(std::string inputString, int ausloeser);
+	void WarningMode();
 
+	int directionLeft;
+	int velocityLeft;
+	int directionRight;
+	int velocityRight;
+	void circleRegulation();
+	int directionLeftLast;
+	int velocityLeftLast;
+	int directionRightLast;
+	int velocityRightLast;
+	bool warningMode;
 
 private:
+
 	IOControl *ioControl;
 	LogFiles *logfiles;
 	static int BAUDRATE;

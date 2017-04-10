@@ -112,44 +112,110 @@ static gboolean sigint_handler() {
 
 unsigned int manuelleMotorroutine(struct libwebsocket *wsi, unsigned char *data, unsigned char *buffer){
 
+	timer ManuRout;
 	string s_data = reinterpret_cast<char*>(data);
 	json_t *reply_obj;
 	char *reply_str;
 	char *reply;
 	int reply_len;
 	asprintf(&reply, "You typed \"%s\"", data);
-
+	int ausgefuehrt = 0;
 	int test = s_data.compare("STOP");
-
 	if(test == 0){
 		lin->stopMotors();
 		manuellerModus = false;
+		cout << "STOP_DONE!" << endl;
+		ausgefuehrt = 1;
 	}
 
 	test = s_data.compare("sensON");
 	const char *status = "";
 	int hilf = -1;
 	if(test == 0){
-		if((hilf = sensor->sockfd) == 0){
+		cout << "SensOn\n";
+		if((hilf = sensor->sens_init) == 0 || (hilf = sensor->sens_init) == 1 ||(hilf = sensor->sens_init) == 2 ||(hilf = sensor->sens_init) == -1 ){
+			cout << "Hilf:" << hilf << "\n";
+			if(hilf == -1){hilf = 0;} // Zur Sicherstellung, dass korrekte Antwort gesendet wird
 			sensor->initialize();
-			if(sensor->sockfd == 7){
+			cout << "nach Init\n";
+			if(sensor->sens_init == 7){
+				cout << "SENSOR ON";
 				sensor->startRoutine();
-				status = "OK";
+				status = "ON";
 			}
 			else{
-				status = "Failed";
+				status = "OFF";
 			}
 		}
+		ausgefuehrt = 1;
 	}
 
 	test = s_data.compare("sensOFF");
 	if(test == 0){
 		sensor->closeSensor();
+		if(sensor->sens_init != 7){
+                                status = "OFF";
+                        }
+                        else{
+                                status = "ON";
+                        }
+
+		ausgefuehrt = 1;
 	}
 
-	else{
-		lin->interpretControlString(s_data);
+	if(ausgefuehrt == 0){
+		int status = lin->interpretControlString(s_data, sensor->ausloeser);
+		cout << "Status: " << status << "\n\n";
+		if(status == 1){
+
+				if(sensor->sens_init == 7){
+
+						int rueckgabewert = sensor->startRoutine();
+							cout << "Rückgabewert: " << rueckgabewert << "\n\n";
+							if(rueckgabewert == 1){
+								cout << "drin1\n";
+								lin->startMotorsRoutine();
+								}
+							if(rueckgabewert == 2){
+								lin->startMotorsRoutine();
+								// Implements WarningModeRoutine
+								}
+							if(rueckgabewert == 3){	//StopMode
+								if(lin->velocityLeftLast != 0){
+								sensor->stopMode();}
+								}
+							if(rueckgabewert == 4){
+								lin->startMotorsRoutine();
+								goto Notausgang;
+								}
+							}
+				else{
+							lin->startMotorsRoutine();
+						}
+
+	}
+
+		else{ // if status == 2
+
+			if(sensor->sens_init == 7){
+						sensor->startRoutine();}
+			goto Notausgang;
 		}
+	cout << "Übertrag\n";
+	cout << "Ausloeser: " << sensor->ausloeser << "\n";
+	if(sensor->ausloeser == 0){
+	lin->velocityLeftLast = lin->velocityLeft;
+	lin->velocityRightLast = lin->velocityRight;
+	lin->directionLeftLast = lin->directionLeft;
+	lin->directionRightLast = lin->directionRight;}
+
+	cout << lin->velocityLeft << lin->velocityRight << "\n";
+	cout << lin->directionLeft << lin->directionRight << "\n";
+
+	}//ganz außen*/
+
+	Notausgang: cout << "Notausgang\n\n";
+
 	if(hilf == -1){
 	reply_obj = json_pack("{s:s, s:s}", "Type", "standard", "Message", reply); // Erstellung JSON-Objekt -> "Type standart", "Message REPLY"
 		}
@@ -163,7 +229,9 @@ unsigned int manuelleMotorroutine(struct libwebsocket *wsi, unsigned char *data,
 	json_decref(reply_obj); 						// gibt das JSON-Objekt frei
 	free(reply); 								// gibt den String Antwort frei
 	free(reply_str); 							// gibt den String "reply_str" frei
-	return reply_len; 
+	ManuRout.stop();
+	cout << ManuRout << endl;
+	return reply_len;
 
 }
 
@@ -184,7 +252,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	int reply_len;
 	int ausgefuehrt = 0;
 	int hilf = -1;
-	//char *sensHilfe;
+
 	asprintf(&reply, "You typed \"%s\"", data);				// Füge zu den eigegebenen Daten "you typed" hinzu und schreibe in reply
 
 	string manuell = "manuell";
@@ -195,13 +263,14 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		manuellerModus = true;
 		hilf = sensor->getSensInit();
 		if(hilf != 7){
-			sensorHilf = "sensOFF";
+			sensorHilf = "OFF";
 		}
 		else{
-			sensorHilf = "sensON";
+			sensorHilf = "ON";
 		}
 	}
 	test = 7;
+
 	string automatik = "automatik";							// == 0 ? -> ist gleich
 	test = s_data.compare(automatik);
 	if (test == 0) {
@@ -209,6 +278,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		ioControl->blinken(27, 200);
 	}
 	test = 7;
+
 	string manuStop = "STOP";
 	test = s_data.compare(manuStop);
 	if (test == 0) {
@@ -216,50 +286,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		ioControl->blinken(23, 200);
 	}
 	test = 7;
-	string start = "Start";
-	test = s_data.compare(start);
-	while (test == 0 && ausgefuehrt != 1) {
-		if (sensor->getAusloeser() == 0) {
-			ausgefuehrt = ioControl->blinken(24, 50);
-		} else {
-			sensor->startRoutine();
-		}
-	}
-	ausgefuehrt = 0;
-	test = 7;
-	string stop = "Stop";
-	test = s_data.compare(stop);
-	while (test == 0 && ausgefuehrt != 1) {
-		if (sensor->getAusloeser() == 0) {
-			ausgefuehrt = ioControl->blinken(23, 50);
-		} else {
-			sensor->startRoutine();
-		}
-	}
-	ausgefuehrt = 0;
-	test = 7;
-	string left = "Left";
-	test = s_data.compare(left);
-	while (ausgefuehrt != 1 && test == 0) {
-		if (sensor->getAusloeser() == 0) {
-			ausgefuehrt = ioControl->blinken(25, 50);
-		} else {
-			sensor->startRoutine();
-		}
-	}
-	ausgefuehrt = 0;
-	test = 7;
-	string right = "Right";
-	test = s_data.compare(right);
-	while (ausgefuehrt != 1 && test == 0) {
-		if (sensor->getAusloeser() == 0) {
-			ausgefuehrt = ioControl->blinken(27, 50);
-		} else {
-			sensor->startRoutine();
-		}
-	}
-	ausgefuehrt = 0;
-	test = 7;
+
 	string sensInit = "SensInit";
 	test = s_data.compare(sensInit);
 	if (test == 0) {
@@ -292,7 +319,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		ioControl->writePin(23, 1);
 		ioControl->writePin(25, 1);
 
-		lin->startMotorsRoutine(0x55, 0x30, 0x55, 0x30);
+		lin->startMotorsRoutine();
 
 		ioControl->writePin(25, 0);
 		ioControl->writePin(23, 0);
@@ -310,7 +337,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		ioControl->writePin(23, 0);
 	}
 	cover = true;
-	// Test Ende
+
 	if(hilf == -1 ){
 	reply_obj = json_pack("{s:s, s:s}", "Type", "standard", "Message", reply); // Erstellung JSON-Objekt -> "Type standart", "Message REPLY"
 	}
@@ -494,8 +521,8 @@ int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argum
 	ioControl->writePin(24, 0);
 
 	WebSocket_initialisierung(argc, argv);
-	// Status f�r Websocket-Init wird in Funktion implementiert
-//	sensor->initialize();
+	// Status für Websocket-Init wird in Funktion implementiert
+	sensor->initialize();
 	// Status für Sensor-Init wird in Funktion implementiert
 	if (sensor->getSensorRoutine() != 7) {
 		ioControl->writePin(23, 1);
@@ -514,9 +541,9 @@ int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argum
 	while (cnt >= 0 && !exit_loop) {
 		timer t;
 		ioControl->writePin(24, 1);
-		if (sensor->getSensorRoutine() == 7) {
-			sensor->startRoutine();
-		}
+//		if (sensor->getSensorRoutine() == 7) {
+//			sensor->startRoutine();
+//		}
 		if(manuellerModus == false){
 			cnt = libwebsocket_service(context, 10);			// u.a. neue Verbindungen werden akzeptiert ; ggf. setzen des send_notification
 			}

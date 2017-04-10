@@ -2,19 +2,16 @@
 
 class IOControl;
 class LogFiles;
+class Lin;
 class Sensor
 {
 public:
 	Sensor();
-	Sensor(IOControl *p_ioControl, LogFiles *logfiles);
+	Sensor(IOControl *p_ioControl, LogFiles *logfiles, Lin *p_lin);
 	~Sensor();
 
-	// Public Funktionen
-	/* ***************************************** */
-	/* Initialisierung der Sensor-Verbindung   	 */
-	/* ***************************************** */
 	int initialize();
-	void startRoutine();
+	int startRoutine();
 
 	void setAusloeser(int value);
 	int getAusloeser();
@@ -27,19 +24,21 @@ public:
 	static int sens_init;
 	void closeSensor();
 	static int sockfd;
+	static int ausloeser;
+	int ausloeser_entfernung;
 
+	void stopMode();
 
 private:
-	// Private Funktionen
-	//Sensor
-	//static int sockfd;				 // Socket-File-Description für Sensor
-	//static int sens_init;			 // Sensor-Routine Enable ; 7=enable; 0=disable
-	static int ausloeser;			 // Auslöserwinkel Gegenstand im Sensorfeld
+	Lin *lin;
 	IOControl *ioControl;
 	LogFiles *logfiles;
-	/* ***************************************** */
-	/* Socketadresse - IPv4 or IPv6: 	     */
-	/* ***************************************** */
+	//void stopMode();
+
+	int aktuelle_entfernung;
+	int aktueller_ausloeser;
+
+
 	void *get_in_addr(struct sockaddr *sa);
 
 

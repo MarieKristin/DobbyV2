@@ -12,9 +12,13 @@
 #include <iostream>
 #include <sstream>
 
+using namespace std;
+
+
 Lin::Lin(IOControl *p_ioControl, LogFiles *p_logfiles){
 	ioControl = p_ioControl;
 	logfiles = p_logfiles;
+	warningMode = false;
 }
 
 Lin::Lin()
@@ -60,45 +64,104 @@ void Lin::stopMotors() {
 	ioControl->setDelay(2000);
 }
 
-void Lin::interpretControlString(std::string inputString){
+void Lin::circleRegulation(){
+	cout << "CIrcleCirculation" << endl;
+	if(velocityLeft != 00 ||  velocityRight != 00){
+	if (((directionLeftLast != directionRightLast) && (directionLeft == directionRight)) ||
+				((directionLeftLast == directionRightLast) && (directionLeft != directionRight))){
+			int veloLeft = velocityLeftLast;
+			int veloRight = velocityRightLast;
+			if(velocityLeftLast < velocityRightLast){
+				while(velocityRightLast > 6){
+                                	veloLeft = veloLeft/2;
+                                	veloRight = veloRight/2;
+					messageFrame.setContent(0x3C, 0x84, directionLeftLast, veloLeft, 0x55, 0xA5,
+							directionRightLast, veloRight, 0xFF);
+					sendMessageFrame();
+                                	}
+				}
+			else{
+				while(velocityLeftLast > 6){
+					veloLeft = veloLeft/2;
+					veloRight = veloRight/2;
+					messageFrame.setContent(0x3C, 0x84, directionLeftLast, veloLeft, 0x55, 0xA5,
+                                                        directionRightLast, veloRight, 0xFF);
+                                        sendMessageFrame();
+					}
+				}
+			}
 
-	std::stringstream puffer;
-	std::stringstream puffer1;
-	int directionLeft;
+	}
+}
+
+
+int Lin::interpretControlString(std::string inputString, int status){
+		int help;
+		std::stringstream puffer;
+
+		//VelocityLeft//
+		puffer  << (inputString.substr(3,2));
+                puffer  >> std::hex >> velocityLeft;
+                puffer.str("");
+                puffer.clear();
+
 		puffer  << (inputString.substr(0,2));
-		puffer  >> std::hex >> directionLeft;
+		puffer >> std::hex >> help; 
+		cout << "InterpretString Help: " << help << "\n";
+		cout << "InterpretString LastLeft: " << directionLeftLast << "\n";
+		if( status == 0 || (status != 0 && (help != directionLeftLast))){
+				 directionLeft = help;
+					}
+		else{
+				if(status != 0 && velocityLeft == 0){
+					messageFrame.setContent(0x3C, 0x84, directionLeftLast, 0x00, 0x55, 0xA5, directionRightLast, 0x00, 0xFF);
+        				sendMessageFrame();
+					return 2;
+					}
+				else{
+					return 2;
+					}}
 		puffer.str("");
 		puffer.clear();
 
-	int velocityLeft;
-		puffer  << (inputString.substr(3,2));
+		/*puffer  << (inputString.substr(3,2));
 		puffer  >> std::hex >> velocityLeft;
 		puffer.str("");
-		puffer.clear();
+		puffer.clear();*/
 
-	int directionRight;
 		puffer  << (inputString.substr(6,2));
-		puffer  >> std::hex >> directionRight;
+		puffer >> std::hex >> help;
+		cout << "InterpretString Help: " << help << "\n";
+                cout << "InterpretString LastRight: " << directionRightLast << "\n";
+		if( status == 0 || (status != 0 && (help != directionRightLast))){
+				directionRight = help;
+
+					}
+		else{
+					return 2;
+					}
 		puffer.str("");
 		puffer.clear();
-	int velocityRight;
+
 		puffer  << (inputString.substr(9,2));
 		puffer  >> std::hex >> velocityRight;
-//	std::cout << directionLeft << " " << velocityLeft << " " << directionRight << " " << velocityRight << " \n";
-	startMotorsRoutine(directionLeft, velocityLeft, directionRight, velocityRight);
-
+		return 1;
+//		cout << "DirectLeft:" << directionLeft << " VeloLeft:"<< velocityLeft << " DirectRight: " << directionRight << " VeloRight: " << velocityRight << "\n\n";
 }
 
 
 
 
-//void Lin::startMotorsInit(int directionLeft, int velocityLeft, int directionRight,int velocityRight) {
 void Lin::startMotorsInit(){
 	setInitialContents();
 	if (ioControl->getHandle() < 0) {
 		ioControl->openSerial();
 	}
-	messageFrame.setContent(0x3C, 0x84, 0x55, 0x00, 0x55, 0xA5, 0xAA, 0x00, 0xFF);
+	velocityLeft = 0;
+	velocityRight = 0;
+	//directionLeft = 170;
+	//directionRight = 85;
+	messageFrame.setContent(0x3C, 0x84, 0xAA, 0x00, 0x55, 0xA5, 0x55, 0x00, 0xFF);
 	sendWakeUp();
 	ioControl->setSleep(310000);  //Warte 310ms
 	sendInitFrame();
@@ -108,9 +171,15 @@ void Lin::startMotorsInit(){
 	sendMessageFrame();
 	ioControl->setSleep(50000);  //Warte 50ms
 	ioControl->setDelay(2000);
+
+	velocityLeftLast = 0;
+	velocityRightLast = 0;
+	directionLeftLast = 0xAA;
+	directionRightLast = 0x55;
 }
 
-void Lin::startMotorsRoutine(int directionLeft, int velocityLeft, int directionRight, int velocityRight){
+void Lin::startMotorsRoutine(){
+	cout << "startMotorsRountine" << endl;
 	messageFrame.setContent(0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5,
 		directionRight, velocityRight, 0xFF);
 	sendMessageFrame();
@@ -183,3 +252,44 @@ void Lin::sendMessageFrame() {
 	}
 }
 
+void Lin::WarningMode() {
+
+
+
+/*	cout << "SensorWarningLevel" << endl;
+	if(velocityLeft > velocityRight){
+		int verhaeltnis = velocityLeft / velocityRight;
+		while(velocityLeft > 27){
+				velocityLeft = velocityLeft - 9;
+                                velocityRight = velocityLeft/verhaeltnis;
+                                messageFrame.setContent(0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5,
+                                                        directionRight, velocityRight, 0xFF);
+                                sendMessageFrame();
+                                }
+
+
+	}
+	else{
+		if(velocityLeft < velocityRight){
+				int verhaeltnis = velocityRight / velocityLeft;
+		                while(velocityRightLast > 27){
+                	                velocityRight = velocityRight - 9;
+                        	        velocityLeft = velocityRight/verhaeltnis;
+                                	messageFrame.setContent(0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5,
+                                                        directionRight, velocityRight, 0xFF);
+                                	sendMessageFrame();
+                                }
+
+			}
+		else{
+			while(velocityLeft <= 27){
+				velocityLeft = velocityLeft - 9;
+				velocityRight = velocityRight - 9;
+				messageFrame.setContent(0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5,
+							directionRight, velocityRight, 0xFF);
+				sendMessageFrame();
+				}
+			}
+
+		}*/
+}
