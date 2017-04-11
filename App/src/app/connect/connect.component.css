@@ -135,6 +135,23 @@ p {
       0 0 10px 2px rgba(0, 210, 0, 0.5);
 }
 
+.warn input:checked ~ label:before {
+  background: #ffcc00;
+  background: radial-gradient(40% 35%, #ffff66, #ffcc00 60%);
+  box-shadow:
+      inset 0 3px 5px 1px rgba(0,0,0,0.1),
+      0 1px 0 rgba(255,255,255,0.4),
+      0 0 10px 2px rgba(255, 255, 0, 0.5);
+}
+
+.stop input:checked ~ label:before {
+  background: #ff0000;
+  background: radial-gradient(40% 35%, #ff5050, #ff0000 60%);
+  box-shadow:
+      inset 0 3px 5px 1px rgba(0,0,0,0.1),
+      0 1px 0 rgba(255,255,255,0.4),
+      0 0 10px 2px rgba(255, 0, 0, 0.5);
+}
 
 
 

@@ -23,7 +23,7 @@ export class ConnectComponent {
   private joystick;
   private intervalID;
   private sensStatus = 0;
-  private initSensor = 0;
+  //0 - off, 1 - on:ok, 2 - on:warn, 3 - on:stop
 
   constructor() {  }
 
@@ -45,14 +45,19 @@ export class ConnectComponent {
 
       this._ws.onmessage = event => {
         //this.history.push('[SERVER] ' + event.data);
-        if (this.initSensor == 0) {
-          var jsonData = JSON.parse(event.data);
-          var status = jsonData.Sensor;
+        var jsonData = JSON.parse(event.data);
+        var status = jsonData.Sensor;
+
+        if (status != undefined) {
           if (status.localeCompare('OFF') == 0) {
             this.sensStatus = 0;
-          } else this.sensStatus = 1;
+          } else if (status.localeCompare('OK') == 0) {
+            this.sensStatus = 1;
+          } else if (status.localeCompare('WARN') == 0) {
+            this.sensStatus = 2;
+          } else this.sensStatus = 3;
+
           this.evaluateSensStatus();
-          this.initSensor++;
         }
       };
 
@@ -205,14 +210,31 @@ export class ConnectComponent {
       this._ws.send('sensOFF');
       this.sensStatus = 0;
     }
-    this.initSensor = 0;
   }
 
   private evaluateSensStatus() {
     var checkBox = <HTMLCollectionOf<HTMLInputElement>>document.getElementsByClassName('checkSens');
+    var sensBox = <HTMLCollectionOf<HTMLInputElement>>document.getElementsByClassName('switch');
+
     if (this.sensStatus==0) {
       checkBox[0].checked = false;
-    } else checkBox[0].checked = true;
+    } else {
+      switch(this.sensStatus) {
+        case 1:
+          sensBox[0].classList.remove('warn');
+          sensBox[0].classList.remove('stop');
+          break;
+        case 2:
+          sensBox[0].classList.add('warn');
+          sensBox[0].classList.remove('stop');
+          break;
+        case 3:
+          sensBox[0].classList.add('stop');
+          sensBox[0].classList.remove('warn');
+          break;
+      }
+      checkBox[0].checked = true;
+    }
   }
 
   private endWs() {
