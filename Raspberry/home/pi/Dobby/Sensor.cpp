@@ -14,6 +14,7 @@
 #include "IOControl.h"
 #include "LogFiles.h"
 #include "Lin.h"
+#include <iostream>
 
 #define PORT "2112"			 	// Port am Sensors
 #define MAXDATASIZE 2000 		 // Max Datasize pro Datenausgabe des Sensors
@@ -21,13 +22,15 @@
 using namespace std;
 
 //Sensor
-int Sensor::sockfd = 0;				 // Socket-File-Description für Sensor
+int Sensor::sockfd = 0;				 // Socket-File-Description fÃ¼r Sensor
 int Sensor::sens_init = 0;			 // Sensor-Routine Enable ; 7=enable; 0=disable
-int Sensor::ausloeser = 0;			 // Auslöserwinkel Gegenstand im Sensorfeld
+int Sensor::ausloeser = 0;			 // AuslÃ¶serwinkel Gegenstand im Sensorfeld
 
-Sensor::Sensor(IOControl *p_ioControl, LogFiles *p_logfiles){
+Sensor::Sensor(IOControl *p_ioControl, LogFiles *p_logfiles, Lin *p_lin){
+	lin = p_lin;
 	ioControl = p_ioControl;
 	logfiles = p_logfiles;
+	ausloeser_entfernung = 65000;
 }
 
 Sensor::Sensor(){
@@ -45,8 +48,9 @@ int Sensor::getSensInit(){
 
 
 void Sensor::closeSensor(){
-	close(sockfd);
-	setSensorRoutine(0);
+	int i = close(sockfd);
+	ausloeser = 0;
+	if(i == 0){setSensorRoutine(0);}
 }
 
 void Sensor::setAusloeser(int value){
@@ -138,7 +142,7 @@ int Sensor::initialize() {
 	return getSensorRoutine();
 }
 
-void Sensor::startRoutine() {
+int Sensor::startRoutine() {
 	string msg = "\x02sRN LMDscandata\x03\0";
 	int len = msg.size();
 	int numbytes = 0;
@@ -152,26 +156,21 @@ void Sensor::startRoutine() {
 		printf("Senden fehlgeschlagen\n");
 	}
 
-	ioControl->initialize();
+//	ioControl->initialize();
 
-	numbytes = recv(sockfd, buf, MAXDATASIZE - 1, 0);	// Empfang der Messwerte
-	buf[numbytes] = '\0';					// Abschluss des Messwert-Strings
-//	printf("client: received '%s'\n", buf);
-
-	char Messdateneinheit[6] = "DIST1";	// Startwert der Messkomponenten zur Auswertung
+	numbytes = recv(sockfd, buf, MAXDATASIZE - 1, 0);			// Empfang der Messwerte
+	buf[numbytes] = '\0';							// Abschluss des Messwert-Strings
+	char Messdateneinheit[6] = "DIST1";					// Startwert der Messkomponenten zur Auswertung
 	int pos_search = 0;							//
 	int pos_text = 0;							// Aktuelle Stelle im Suchstring
-	int len_search = 5;					// Länge des Suchstringes (der Needle)
+	int len_search = 5;							// LÃ¤nge des Suchstringes (der Needle)
 	int len_text = MAXDATASIZE;
 
-	for (pos_text = 0; pos_text < len_text - len_search; ++pos_text)// Funktion zum Suchen des Startwertes der Messkomponenten
+	for (pos_text = 0; pos_text < len_text - len_search; ++pos_text)	// Funktion zum Suchen des Startwertes der Messkomponenten
 			{
 		if (buf[pos_text] == Messdateneinheit[pos_search]) {
 			++pos_search;
 			if (pos_search == len_search) {
-				// match
-//				printf("match from %d to %d\n", pos_text - len_search,
-//						pos_text);
 				break;
 			}
 		} else {
@@ -180,15 +179,14 @@ void Sensor::startRoutine() {
 		}
 	}
 
-	int i = (pos_text - len_search) + 1;// Position des 1. Buchstabes der Needle
-	int k = 0;							// Laufvariablen
-	char Messdateninhalt[6];					// 1. Argument
-	char Skalierungsfaktor[9];					// 2. Argument
-	char Skalierungsoffset[9];					// 3. Argument
-	char Startwinkel[9];						// 4. Argument
-	char Winkelschrittweite[5];					// 5. Argument
-	char Anzahl_Daten[5];						// 6. Argument
-
+	int i = (pos_text - len_search) + 1;					// Position des 1. Buchstabes der Needle
+	int k = 0;								// Laufvariablen
+	char Messdateninhalt[6];						// 1. Argument
+	char Skalierungsfaktor[9];						// 2. Argument
+	char Skalierungsoffset[9];						// 3. Argument
+	char Startwinkel[9];							// 4. Argument
+	char Winkelschrittweite[5];						// 5. Argument
+	char Anzahl_Daten[5];							// 6. Argument
 	while (buf[i] != ' ') {
 		Messdateninhalt[k] = buf[i];
 		k++;
@@ -240,9 +238,9 @@ void Sensor::startRoutine() {
 	int l = 0;
 	char Entfernung[5];										// Entfernung in mm
 	int AnzahlDaten = (int) strtol(Anzahl_Daten, NULL, 16);
-//	printf("%d\n", AnzahlDaten);
-
+	int aktuelle_entfernung = 65000;
 	for (k = 1; k < 181; k++) {
+
 		while (buf[i] != ' ') {
 			Entfernung[l] = buf[i];
 			l++;
@@ -251,35 +249,57 @@ void Sensor::startRoutine() {
 
 		if (l <= 5) {
 			Entfernung[l] = '\0';
-		}
-		int entfernung = (int) strtol(Entfernung, NULL, 16);
-
-		printf("%d %d", k, entfernung);
-		if (entfernung < 10) {
-		} else {
-			if (entfernung < 400) {
-				if (entfernung < 180) {
-					ausloeser = k;
-					ioControl->writePin(27, 1);
-//					printf("STOP\n");
-				} else {
-//					printf("ACHTUNG\n");
-					if (k == ausloeser) {
-						ioControl->writePin(27, 0);
-						ausloeser = 0;
-					}
-				}
-			} else {
-//				printf("alles ok\n");
-				if (k == ausloeser) {
-					ioControl->writePin(27, 0);
-					ausloeser = 0;
-				}
 			}
-		}
+
+		int entfernung = (int) strtol(Entfernung, NULL, 16);
+		if (entfernung < 10) {
+			}
+
+		else {	if(aktuelle_entfernung > entfernung){
+						aktuelle_entfernung = entfernung;
+						aktueller_ausloeser = k;
+						}
+			}
+
+
 		i++;
 		l = 0;
 	}
+	cout << "Aktuelle Entfernung: " << aktuelle_entfernung << "\n" ;
+	cout << "Aktueller Ausloeser: " << aktueller_ausloeser << "\n";
+	if(aktuelle_entfernung < 500){
+		if(aktuelle_entfernung < 230){
+				if(ausloeser == 0){
+					ausloeser = aktueller_ausloeser;
+					ausloeser_entfernung = aktuelle_entfernung;
+					return 3;}
+				else{
+					if(aktueller_ausloeser >= ausloeser-15 && aktueller_ausloeser <= ausloeser + 15 ){
+						if(aktuelle_entfernung > ausloeser_entfernung){return 4;}
+						else{return 3;}
+					}
+
+				}}
+			else{
+		//			lin->WarningMode();
+					ausloeser = 0;
+					return 2;
+					}
+		}
+	else{
+		if(ausloeser != 0){ausloeser = 0;}
+		return 1;
+		}
+
 //	printf("Ende-Sensor\n");
 }
 
+
+
+void Sensor::stopMode(){
+
+	if(lin->velocityLeftLast != 0 && lin->velocityRightLast != 0){
+			lin->startMotorsInit();
+		}
+
+} 
