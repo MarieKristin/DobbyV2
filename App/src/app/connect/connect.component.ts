@@ -49,15 +49,19 @@ export class ConnectComponent {
         var status = jsonData.Sensor;
 
         if (status != undefined) {
-          if (status.localeCompare('OFF') == 0) {
-            this.sensStatus = 0;
-          } else if (status.localeCompare('OK') == 0) {
-            this.sensStatus = 1;
-          } else if (status.localeCompare('WARN') == 0) {
-            this.sensStatus = 2;
-          } else this.sensStatus = 3;
+          if(status.localeCompare('default') != 0) {
+            if (status.localeCompare('OFF') == 0) {
+              this.sensStatus = 0;
+            } else if (status.localeCompare('OK') == 0) {
+              this.sensStatus = 1;
+            } else if (status.localeCompare('WARN') == 0) {
+              this.sensStatus = 2;
+            } else {
+              this.sensStatus = 3;
+            }
 
-          this.evaluateSensStatus();
+            this.evaluateSensStatus();
+          }
         }
       };
 
