@@ -1,6 +1,7 @@
 //import {Component, OnInit} from '@angular/core';
 import {Component, OnInit, AfterViewInit} from '@angular/core';
 import {SafeResourceUrl, DomSanitizer} from '@angular/platform-browser';
+import '../../assets/ping.js';
 
 @Component({
   selector: 'app-graphics',
@@ -12,9 +13,7 @@ export class GraphicsComponent implements AfterViewInit {
   private loader: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('loader');
 
   constructor(sanitizer: DomSanitizer) {
-    //this.url = sanitizer.bypassSecurityTrustResourceUrl('http://192.168.0.1/modell/index.html');
-    this.url = sanitizer.bypassSecurityTrustResourceUrl('http://192.168.0.1:2209/stream_simple.html');
-
+    this.url = sanitizer.bypassSecurityTrustResourceUrl('http://192.168.0.1/Modell/index.html');
   }
 
   public ngAfterViewInit() {
