@@ -9,6 +9,19 @@
   border-bottom: 1px solid #879baa;
 }
 
+.fußleiste {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 0.7em;
+  background-color: #ebf0f5;
+  background-image: linear-gradient(to bottom, #ebf0f5, #becdd7);
+  color: #000000;
+  border-top: 1px solid black;
+  padding: 1%;
+}
+
 .main-content {
   margin: 0;
   padding: 0;
