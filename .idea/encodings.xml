@@ -18,6 +18,9 @@
     <file url="file://$PROJECT_DIR$/App/src/app/graphics/graphics.component.ts" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/App/src/app/home/home.component.html" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/App/src/app/home/home.component.ts" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/App/src/app/impressum/impressum.component.html" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/App/src/app/impressum/impressum.component.spec.ts" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/App/src/app/impressum/impressum.component.ts" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/App/src/assets/logo.png" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/App/src/assets/virtualjoystick.js" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/App/src/fonts.css" charset="UTF-8" />

@@ -8,6 +8,7 @@ import { HttpModule } from '@angular/http';
 import { AppComponent } from './app.component';
 import { ConsoleComponent } from './console/console.component';
 import { ConnectComponent } from './connect/connect.component';
+import { ImpressumComponent } from './impressum/impressum.component';
 import {appRoutes} from './app.routing';
 
 @NgModule({
@@ -15,6 +16,7 @@ import {appRoutes} from './app.routing';
     AppComponent,
     ConsoleComponent,
     ConnectComponent,
+    ImpressumComponent,
     HomeComponent, GraphicsComponent
   ],
   imports: [

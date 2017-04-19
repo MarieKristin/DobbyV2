@@ -3,6 +3,7 @@ import {HomeComponent} from './home/home.component';
 import {ConsoleComponent} from './console/console.component';
 import {ConnectComponent} from './connect/connect.component';
 import {GraphicsComponent} from './graphics/graphics.component';
+import {ImpressumComponent} from './impressum/impressum.component';
 
 const routes: Routes = [
   {
@@ -25,6 +26,10 @@ const routes: Routes = [
   {
     path: 'graphics',
     component: GraphicsComponent
+  },
+  {
+    path: 'impressum',
+    component: ImpressumComponent
   }
 ];
 
