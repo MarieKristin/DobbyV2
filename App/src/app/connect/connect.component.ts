@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import {SafeResourceUrl, DomSanitizer} from '@angular/platform-browser';
 import '../../assets/virtualjoystick.js';
 
 @Component({
@@ -8,7 +9,8 @@ import '../../assets/virtualjoystick.js';
 })
 
 export class ConnectComponent {
-
+  url: SafeResourceUrl;
+  linker: DomSanitizer;
   private _ws: WebSocket;
 
   public history: Array<string> = [];
@@ -19,13 +21,18 @@ export class ConnectComponent {
   private loader: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('loader');
   private direction: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('direction');
   private distance: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('distance');
+  private arrAuto: HTMLCollectionOf<HTMLElement> = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('auto');
 
   private joystick;
-  private intervalID;
+  private intervalID = null;
   private sensStatus = 0;
   //0 - off, 1 - on:ok, 2 - on:warn, 3 - on:stop
+  private isAuto = 0;
 
-  constructor() {  }
+  constructor(sanitizer: DomSanitizer) {
+    this.linker = sanitizer;
+    /*this.url = sanitizer.bypassSecurityTrustResourceUrl('http://192.168.0.1:2209/livestream.html');*/
+  }
 
   public connect() {
     var i = 0;
@@ -84,13 +91,25 @@ export class ConnectComponent {
   }
 
   public auto() {
+    var i=0;
+    this.isAuto = 1;
+
     this._ws.send('automatik');
+    for (i=0; i< this.arrChoose.length; i++) {
+      this.arrChoose[i].style.display = "none";
+    }
+    this.url = this.linker.bypassSecurityTrustResourceUrl('http://192.168.0.1:2209/livestream.html');
+    for (i=0; i< this.arrAuto.length; i++) {
+      this.arrAuto[i].style.display = "block";
+    }
   }
 
   public man() {
     var i = 0;
     var joyStickDiv = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('joyStickDiv');
     var barMotor = <HTMLCollectionOf<HTMLElement>>document.getElementsByClassName('bar-inner');
+    this.isAuto = 0;
+
     this.joystick = new VirtualJoystick({
       container: joyStickDiv[0],
       leftMotor: barMotor[0],
@@ -257,12 +276,17 @@ export class ConnectComponent {
   private back() {
     var i = 0;
 
-    clearInterval(this.intervalID);
-    this.joystick.destroy();
+    if (!this.isAuto) {
+      clearInterval(this.intervalID);
+      this.joystick.destroy();
+    }
     this._ws.send('STOP');
     //this.history.push('[CLIENT] ' + 'STOP');
     for (i=0; i< this.arrMan.length; i++) {
       this.arrMan[i].style.display = "none";
+    }
+    for (i=0; i< this.arrAuto.length; i++) {
+      this.arrAuto[i].style.display = "none";
     }
     for (i=0; i< this.arrChoose.length; i++) {
       this.arrChoose[i].style.display = "block";
