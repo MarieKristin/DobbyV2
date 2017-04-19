@@ -1,17 +1,25 @@
 /* You can add global styles to this file, and also import other style files */
+@import 'fonts.css';
+
+body {
+  font-family: 'Acme';
+  background: #fefefe;
+
+  /*font-family: 'Kranky';*/
+  /*font-family: 'Caveat';*/
+}
+
 .btn {
   /*display: inline-block;
   margin: 0 10px 0 0;
   padding: 15px 45px;
   font-size: 48px;
-  font-family: "Bitter",serif;
   line-height: 1.8;*/
   padding: 15px 15px;
   width: 40%;
   margin: 5%;
   appearance: none;
   color: #ffffff;
-  /*text-shadow: -2px 2px #346392;*/
   background-color: #41aaaa;
   background-image: linear-gradient(to bottom, #41aaaa, #00646e);
   box-shadow: inset 0 0 0 1px #004b55;
