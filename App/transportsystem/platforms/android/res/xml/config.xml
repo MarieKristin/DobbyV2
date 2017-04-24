@@ -19,10 +19,13 @@
     <allow-intent href="sms:*" />
     <allow-intent href="mailto:*" />
     <allow-intent href="geo:*" />
-    <allow-navigation href="http://192.168.0.1/modell/index.html" />
-    <allow-navigation href="http://192.168.0.1:2209" />
+    <allow-navigation href="http://192.168.0.1/Modell/index.html" />
     <allow-navigation href="http://192.168.0.1:2209/livestream.html" />
     <allow-intent href="market:*" />
+    <icon density="ldpi" platform="android" src="icon/icon_LDPI.png" />
+    <icon density="mdpi" platform="android" src="icon/icon_MDPI.png" />
+    <icon density="hdpi" platform="android" src="icon/icon_HDPI.png" />
+    <icon density="xhdpi" platform="android" src="icon/icon_XHDPI.png" />
     <preference name="loglevel" value="DEBUG" />
     <preference name="webView" value="org.crosswalk.engine.XWalkWebViewEngine" />
     <preference name="xwalkVersion" value="22+" />

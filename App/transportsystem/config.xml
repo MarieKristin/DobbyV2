@@ -17,10 +17,10 @@
     <allow-intent href="geo:*" />
     <platform name="android">
         <allow-intent href="market:*" />
-		<!--<icon src="QUELLPFAD" density="ldpi" />
-		<icon src="QUELLPFAD" density="mdpi" />
-		<icon src="QUELLPFAD" density="hdpi" />
-		<icon src="QUELLPFAD" density="xhdpi" />-->
+		<icon platform="android" src="icon/icon_LDPI.png" density="ldpi" />
+		<icon platform="android" src="icon/icon_MDPI.png" density="mdpi" />
+		<icon platform="android" src="icon/icon_HDPI.png" density="hdpi" />
+		<icon platform="android" src="icon/icon_XHDPI.png" density="xhdpi" />
     </platform>
     <platform name="ios">
         <allow-intent href="itms:*" />
@@ -38,6 +38,6 @@
     </plugin>
     <plugin name="cordova-plugin-whitelist" spec="~1.3.0" />
 	<allow-navigation href="http://192.168.0.1/Modell/index.html" />
-	<allow-navigation href="http://192.168.0.1:2209" />
 	<allow-navigation href="http://192.168.0.1:2209/livestream.html" />
+	<!--<allow-navigation href="http://192.168.0.1:2209" />-->
 </widget>

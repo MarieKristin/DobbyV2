@@ -5,8 +5,9 @@ webpackJsonp([1,4],{
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__assets_virtualjoystick_js__ = __webpack_require__(688);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__assets_virtualjoystick_js___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1__assets_virtualjoystick_js__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_platform_browser__ = __webpack_require__(75);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__assets_virtualjoystick_js__ = __webpack_require__(693);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__assets_virtualjoystick_js___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2__assets_virtualjoystick_js__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return ConnectComponent; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -19,35 +20,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 
 
+
 var ConnectComponent = (function () {
-    //start of debugging
-    /*public init() {
-      this.helpEl[0].style.display = "none";
-  
-      this.joystick = new VirtualJoystick({
-        mouseSupport: true,
-        stationaryBase: true,
-        direction: this.direction[0],
-        distance: this.distance[0],
-        baseX: 200,
-        baseY: 400,
-        limitStickTravel: true,
-        stickRadius: 50
-      });
-  
-      var laufI;
-      for (laufI=0; laufI< this.arrMan.length; laufI++) {
-        this.arrMan[laufI].style.display = "block";
-      }
-  
-      this.history.push('[CLIENT] ' + 'JoyStick initiated');
-      this.intervalID = setInterval(this.sendToMotor, 3000, this.history, this.joystick);
-      //this.intervalID = setInterval(this.sendToMotor, 3000, this.history);
-    }*/
-    //end of debugging
-    // TODO: In einen Angular 2 Service schieben
-    function ConnectComponent() {
-        //public command: string;
+    function ConnectComponent(sanitizer) {
         this.history = [];
         this.arrChoose = document.getElementsByClassName('hidden');
         this.arrMan = document.getElementsByClassName('manual');
@@ -55,65 +30,104 @@ var ConnectComponent = (function () {
         this.loader = document.getElementsByClassName('loader');
         this.direction = document.getElementsByClassName('direction');
         this.distance = document.getElementsByClassName('distance');
+        this.arrAuto = document.getElementsByClassName('auto');
+        this.intervalID = null;
+        this.sensStatus = 0;
+        //0 - off, 1 - on:ok, 2 - on:warn, 3 - on:stop
+        this.isAuto = 0;
+        this.linker = sanitizer;
+        /*this.url = sanitizer.bypassSecurityTrustResourceUrl('http://192.168.0.1:2209/livestream.html');*/
     }
     ConnectComponent.prototype.connect = function () {
         var _this = this;
         var i = 0;
         this.helpEl[0].style.display = "none";
         this.loader[0].style.display = "block";
+        var menu = document.getElementsByClassName('menuButton');
+        menu[0].classList.add('inactive');
         this._ws = new WebSocket('ws://192.168.0.1:2609');
-        var timeOut = setTimeout(this.timeOutConnect, 3000, this._ws, this.loader[0]);
+        var timeOut = setTimeout(this.timeOutConnect, 3000, this._ws, this.loader[0], menu[0]);
         this._ws.onopen = function (event) {
             clearTimeout(timeOut);
             _this.loader[0].style.display = "none";
             _this._ws.onmessage = function (event) {
-                _this.history.push('[SERVER] ' + event.data);
+                //this.history.push('[SERVER] ' + event.data);
+                var jsonData = JSON.parse(event.data);
+                var status = jsonData.Sensor;
+                if (status != undefined) {
+                    if (status.localeCompare('default') != 0) {
+                        if (status.localeCompare('OFF') == 0) {
+                            _this.sensStatus = 0;
+                        }
+                        else if (status.localeCompare('OK') == 0) {
+                            _this.sensStatus = 1;
+                        }
+                        else if (status.localeCompare('WARN') == 0) {
+                            _this.sensStatus = 2;
+                        }
+                        else {
+                            _this.sensStatus = 3;
+                        }
+                        _this.evaluateSensStatus();
+                    }
+                }
             };
             for (i = 0; i < _this.arrChoose.length; i++) {
                 _this.arrChoose[i].style.display = "block";
             }
         };
+        this._ws.onerror = function (event) {
+            clearTimeout(timeOut);
+            _this.timeOutConnect(_this._ws, _this.loader[0], menu[0]);
+        };
     };
-    ConnectComponent.prototype.timeOutConnect = function (ws, loader) {
+    ConnectComponent.prototype.timeOutConnect = function (ws, loader, menu) {
         ws.close();
         loader.style.display = "none";
+        menu.classList.remove('inactive');
         document.getElementsByClassName('error')[0].style.display = "block";
     };
     ConnectComponent.prototype.auto = function () {
-        //if (!this.command) {
-        //  return;
-        //}
-        //this.history.push('[CLIENT] ' + this.command);
-        //this._ws.send(this.command);
+        var i = 0;
+        this.isAuto = 1;
         this._ws.send('automatik');
-        this.history.push('[CLIENT] ' + 'automatik');
-        //this.command = '';
+        for (i = 0; i < this.arrChoose.length; i++) {
+            this.arrChoose[i].style.display = "none";
+        }
+        this.url = this.linker.bypassSecurityTrustResourceUrl('http://192.168.0.1:2209/livestream.html');
+        for (i = 0; i < this.arrAuto.length; i++) {
+            this.arrAuto[i].style.display = "block";
+        }
     };
     ConnectComponent.prototype.man = function () {
         var i = 0;
         var joyStickDiv = document.getElementsByClassName('joyStickDiv');
+        var barMotor = document.getElementsByClassName('bar-inner');
+        this.isAuto = 0;
         this.joystick = new VirtualJoystick({
             container: joyStickDiv[0],
+            leftMotor: barMotor[0],
+            leftMotorD: barMotor[1],
+            rightMotor: barMotor[2],
+            rightMotorD: barMotor[3],
             mouseSupport: true,
             stationaryBase: true,
             direction: this.direction[0],
             distance: this.distance[0],
-            baseX: 175,
+            baseX: 180,
             baseY: 350,
             limitStickTravel: true,
             stickRadius: 90
         });
-        this.intervalID = setInterval(this.sendToMotor, 500, this.history, this.joystick, this._ws);
+        this.intervalID = setInterval(this.sendToMotor, 400, this.history, this.joystick, this._ws);
         this._ws.send('manuell');
-        this.history.push('[CLIENT] ' + 'manuell');
-        //this.command = '';
+        //this.history.push('[CLIENT] ' + 'manuell');
         for (i = 0; i < this.arrChoose.length; i++) {
             this.arrChoose[i].style.display = "none";
         }
         for (i = 0; i < this.arrMan.length; i++) {
             this.arrMan[i].style.display = "block";
         }
-        //(<HTMLElement>document.getElementById('debug1')).innerHTML = "Direction: " + this.joystick.calculateDirection();
     };
     ConnectComponent.prototype.sendToMotor = function (historyList, joyStick, webSocket) {
         var message;
@@ -136,12 +150,23 @@ var ConnectComponent = (function () {
         }
         if (dist == 0) {
             var string_dist = '00';
-            var other_motor = '00';
+            var other_motor1 = '00';
+            var other_motor2 = '00';
         }
         else {
             var string_dist = dist.toString(16).toUpperCase();
-            var calc_other_motor = Math.round(dist / 2);
-            var other_motor = calc_other_motor.toString(16).toUpperCase();
+            var calc_other_motor = Math.round(dist / 3);
+            if (calc_other_motor < 7)
+                calc_other_motor = 7;
+            var other_motor1 = calc_other_motor.toString(16).toUpperCase();
+            if (other_motor1.length == 1)
+                other_motor1 = '0' + other_motor1;
+            calc_other_motor = Math.round(dist / 8);
+            if (calc_other_motor < 7)
+                calc_other_motor = 7;
+            var other_motor2 = calc_other_motor.toString(16).toUpperCase();
+            if (other_motor2.length == 1)
+                other_motor2 = '0' + other_motor2;
         }
         switch (dir) {
             case 'Base':
@@ -151,19 +176,31 @@ var ConnectComponent = (function () {
                 message = 'AA-' + string_dist + '-55-' + string_dist;
                 break;
             case 'up-left':
-                message = 'AA-' + other_motor + '-55-' + string_dist;
+                message = 'AA-' + other_motor1 + '-55-' + string_dist;
+                break;
+            case 'up-l-left':
+                message = 'AA-' + other_motor2 + '-55-' + string_dist;
                 break;
             case 'up-right':
-                message = 'AA-' + string_dist + '-55-' + other_motor;
+                message = 'AA-' + string_dist + '-55-' + other_motor1;
+                break;
+            case 'up-r-right':
+                message = 'AA-' + string_dist + '-55-' + other_motor2;
                 break;
             case 'down':
                 message = '55-' + string_dist + '-AA-' + string_dist;
                 break;
             case 'down-left':
-                message = '55-' + other_motor + '-AA-' + string_dist;
+                message = '55-' + other_motor1 + '-AA-' + string_dist;
+                break;
+            case 'down-l-left':
+                message = '55-' + other_motor2 + '-AA-' + string_dist;
                 break;
             case 'down-right':
-                message = '55-' + string_dist + '-AA-' + other_motor;
+                message = '55-' + string_dist + '-AA-' + other_motor1;
+                break;
+            case 'down-r-right':
+                message = '55-' + string_dist + '-AA-' + other_motor2;
                 break;
             case 'left':
                 message = '55-' + string_dist + '-55-' + string_dist;
@@ -178,29 +215,79 @@ var ConnectComponent = (function () {
         webSocket.send(message);
         //historyList.push('[CLIENT] ' + message);
     };
+    ConnectComponent.prototype.clickSens = function () {
+        if (this.sensStatus == 0) {
+            this._ws.send('sensON');
+            this.sensStatus = 1;
+        }
+        else {
+            this._ws.send('sensOFF');
+            this.sensStatus = 0;
+        }
+    };
+    ConnectComponent.prototype.evaluateSensStatus = function () {
+        var checkBox = document.getElementsByClassName('checkSens');
+        var sensBox = document.getElementsByClassName('switch');
+        if (this.sensStatus == 0) {
+            checkBox[0].checked = false;
+        }
+        else {
+            switch (this.sensStatus) {
+                case 1:
+                    sensBox[0].classList.remove('warn');
+                    sensBox[0].classList.remove('stop');
+                    break;
+                case 2:
+                    sensBox[0].classList.add('warn');
+                    sensBox[0].classList.remove('stop');
+                    break;
+                case 3:
+                    sensBox[0].classList.add('stop');
+                    sensBox[0].classList.remove('warn');
+                    break;
+            }
+            checkBox[0].checked = true;
+        }
+    };
+    ConnectComponent.prototype.endWs = function () {
+        var i;
+        clearInterval(this.intervalID);
+        this._ws.close();
+        for (i = 0; i < this.arrChoose.length; i++) {
+            this.arrChoose[i].style.display = "none";
+        }
+        this.helpEl[0].style.display = "block";
+        var menu = document.getElementsByClassName('menuButton');
+        menu[0].classList.remove('inactive');
+    };
     ConnectComponent.prototype.back = function () {
         var i = 0;
-        clearInterval(this.intervalID);
-        this.joystick.destroy();
+        if (!this.isAuto) {
+            clearInterval(this.intervalID);
+            this.joystick.destroy();
+        }
         this._ws.send('STOP');
-        this.history.push('[CLIENT] ' + 'STOP');
+        //this.history.push('[CLIENT] ' + 'STOP');
         for (i = 0; i < this.arrMan.length; i++) {
             this.arrMan[i].style.display = "none";
+        }
+        for (i = 0; i < this.arrAuto.length; i++) {
+            this.arrAuto[i].style.display = "none";
         }
         for (i = 0; i < this.arrChoose.length; i++) {
             this.arrChoose[i].style.display = "block";
         }
-        //this.helpEl[0].style.display = "block";
     };
     ConnectComponent = __decorate([
         __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["_5" /* Component */])({
             selector: 'app-websocket',
-            template: __webpack_require__(669),
-            styles: [__webpack_require__(664)]
+            template: __webpack_require__(672),
+            styles: [__webpack_require__(666)]
         }), 
-        __metadata('design:paramtypes', [])
+        __metadata('design:paramtypes', [(typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__angular_platform_browser__["c" /* DomSanitizer */] !== 'undefined' && __WEBPACK_IMPORTED_MODULE_1__angular_platform_browser__["c" /* DomSanitizer */]) === 'function' && _a) || Object])
     ], ConnectComponent);
     return ConnectComponent;
+    var _a;
 }());
 //# sourceMappingURL=G:/Uni/Dobby/App/DobbyTransportsystem/DobbyV2/App/src/connect.component.js.map
 
@@ -235,8 +322,10 @@ var ConsoleComponent = (function () {
         var _this = this;
         this.loader[0].style.display = "block";
         this.helpEl[0].style.display = "none";
+        var menu = document.getElementsByClassName('menuButton');
+        menu[0].classList.add('inactive');
         this._ws = new WebSocket('ws://192.168.0.1:2609');
-        var timeOut = setTimeout(this.timeOutConnect, 3000, this._ws, this.loader[0]);
+        var timeOut = setTimeout(this.timeOutConnect, 3000, this._ws, this.loader[0], menu[0]);
         this._ws.onopen = function (event) {
             clearTimeout(timeOut);
             _this.loader[0].style.display = "none";
@@ -250,10 +339,15 @@ var ConsoleComponent = (function () {
             }
             _this.console[0].style.display = "block";
         };
+        this._ws.onerror = function (event) {
+            clearTimeout(timeOut);
+            _this.timeOutConnect(_this._ws, _this.loader[0], menu[0]);
+        };
     };
-    ConsoleComponent.prototype.timeOutConnect = function (ws, loader) {
+    ConsoleComponent.prototype.timeOutConnect = function (ws, loader, menu) {
         ws.close();
         loader.style.display = "none";
+        menu.classList.remove('inactive');
         document.getElementsByClassName('error')[0].style.display = "block";
     };
     ConsoleComponent.prototype.updateScroll = function (console) {
@@ -273,11 +367,22 @@ var ConsoleComponent = (function () {
         this._ws.send(this.command);
         this.command = '';
     };
+    ConsoleComponent.prototype.endWs = function () {
+        var i;
+        this._ws.close();
+        for (i = 0; i < this.helpArr.length; i++) {
+            this.helpArr[i].style.display = "none";
+        }
+        this.console[0].style.display = "none";
+        this.helpEl[0].style.display = "block";
+        var menu = document.getElementsByClassName('menuButton');
+        menu[0].classList.remove('inactive');
+    };
     ConsoleComponent = __decorate([
         __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["_5" /* Component */])({
             selector: 'app-websocket',
-            template: __webpack_require__(670),
-            styles: [__webpack_require__(665)]
+            template: __webpack_require__(673),
+            styles: [__webpack_require__(667)]
         }), 
         __metadata('design:paramtypes', [])
     ], ConsoleComponent);
@@ -292,7 +397,9 @@ var ConsoleComponent = (function () {
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_platform_browser__ = __webpack_require__(102);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_platform_browser__ = __webpack_require__(75);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__assets_ping_js__ = __webpack_require__(692);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__assets_ping_js___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2__assets_ping_js__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return GraphicsComponent; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -305,11 +412,11 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 
 
+
 var GraphicsComponent = (function () {
     function GraphicsComponent(sanitizer) {
         this.loader = document.getElementsByClassName('loader');
-        //this.url = sanitizer.bypassSecurityTrustResourceUrl('http://192.168.0.1/modell/index.html');
-        this.url = sanitizer.bypassSecurityTrustResourceUrl('http://192.168.0.1:2209/stream_simple.html');
+        this.url = sanitizer.bypassSecurityTrustResourceUrl('http://192.168.0.1/Modell/index.html');
     }
     GraphicsComponent.prototype.ngAfterViewInit = function () {
         var _this = this;
@@ -339,8 +446,8 @@ var GraphicsComponent = (function () {
     GraphicsComponent = __decorate([
         __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["_5" /* Component */])({
             selector: 'app-graphics',
-            template: __webpack_require__(671),
-            styles: [__webpack_require__(666)]
+            template: __webpack_require__(674),
+            styles: [__webpack_require__(668)]
         }), 
         __metadata('design:paramtypes', [(typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__angular_platform_browser__["c" /* DomSanitizer */] !== 'undefined' && __WEBPACK_IMPORTED_MODULE_1__angular_platform_browser__["c" /* DomSanitizer */]) === 'function' && _a) || Object])
     ], GraphicsComponent);
@@ -375,8 +482,8 @@ var HomeComponent = (function () {
     HomeComponent = __decorate([
         __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["_5" /* Component */])({
             selector: 'app-home',
-            template: __webpack_require__(672),
-            styles: [__webpack_require__(667)]
+            template: __webpack_require__(675),
+            styles: [__webpack_require__(669)]
         }), 
         __metadata('design:paramtypes', [])
     ], HomeComponent);
@@ -386,7 +493,42 @@ var HomeComponent = (function () {
 
 /***/ }),
 
-/***/ 386:
+/***/ 332:
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__(0);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return ImpressumComponent; });
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+
+var ImpressumComponent = (function () {
+    function ImpressumComponent() {
+    }
+    ImpressumComponent.prototype.ngAfterViewInit = function () {
+    };
+    ImpressumComponent = __decorate([
+        __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["_5" /* Component */])({
+            selector: 'app-graphics',
+            template: __webpack_require__(676),
+            styles: [__webpack_require__(670)]
+        }), 
+        __metadata('design:paramtypes', [])
+    ], ImpressumComponent);
+    return ImpressumComponent;
+}());
+//# sourceMappingURL=G:/Uni/Dobby/App/DobbyTransportsystem/DobbyV2/App/src/impressum.component.js.map
+
+/***/ }),
+
+/***/ 388:
 /***/ (function(module, exports) {
 
 function webpackEmptyContext(req) {
@@ -395,20 +537,20 @@ function webpackEmptyContext(req) {
 webpackEmptyContext.keys = function() { return []; };
 webpackEmptyContext.resolve = webpackEmptyContext;
 module.exports = webpackEmptyContext;
-webpackEmptyContext.id = 386;
+webpackEmptyContext.id = 388;
 
 
 /***/ }),
 
-/***/ 387:
+/***/ 389:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_platform_browser_dynamic__ = __webpack_require__(475);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_platform_browser_dynamic__ = __webpack_require__(477);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_core__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__environments_environment__ = __webpack_require__(509);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__app_app_module__ = __webpack_require__(507);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__environments_environment__ = __webpack_require__(511);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__app_app_module__ = __webpack_require__(509);
 
 
 
@@ -421,7 +563,7 @@ __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_platform_browser_dyna
 
 /***/ }),
 
-/***/ 506:
+/***/ 508:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -446,10 +588,47 @@ var AppComponent = (function () {
     AppComponent.prototype.ngAfterViewInit = function () {
         var firstElement = document.getElementsByClassName('linkEl');
         firstElement[0].classList.toggle('menuActive');
+        this.menu[0].addEventListener('touchstart', this.handleTouchStart, false);
+        this.menu[0].addEventListener('mousedown', this.handleTouchStart, false);
+        this.menu[0].addEventListener('touchmove', this.handleTouchMove, false);
+        this.menu[0].addEventListener('mousemove', this.handleTouchMove, false);
+        var attrX = document.createAttribute("paramx");
+        attrX.value = null;
+        this.menu[0].setAttributeNode(attrX);
+        var attrY = document.createAttribute("paramy");
+        attrY.value = null;
+        this.menu[0].setAttributeNode(attrY);
+    };
+    AppComponent.prototype.handleTouchStart = function (event) {
+        event.target.setAttribute('paramx', event.touches[0].clientX.toString());
+        event.target.setAttribute('paramy', event.touches[0].clientY.toString());
+    };
+    AppComponent.prototype.handleTouchMove = function (event) {
+        var x = parseInt(event.target.getAttribute('paramx'));
+        var y = parseInt(event.target.getAttribute('paramy'));
+        if (!x || !y)
+            return;
+        var xUp = event.touches[0].clientX;
+        var yUp = event.touches[0].clientY;
+        var xDiff = x - xUp;
+        var yDiff = y - yUp;
+        if (Math.abs(xDiff) > Math.abs(yDiff) && xDiff > 0) {
+            var menu = document.getElementsByClassName('menu');
+            menu[0].classList.toggle('open');
+            var buttonMenu = document.getElementsByClassName('menuButton');
+            buttonMenu[0].classList.toggle('active');
+        }
+        event.target.setAttribute('paramx', null);
+        event.target.setAttribute('paramy', null);
     };
     AppComponent.prototype.menuClicked = function () {
-        var menu = this.menu[0];
-        menu.classList.toggle('open');
+        if (this.buttonMenu[0].classList.contains('inactive')) {
+        }
+        else {
+            var menu = this.menu[0];
+            menu.classList.toggle('open');
+            this.buttonMenu[0].classList.toggle('active');
+        }
     };
     AppComponent.prototype.menuLinkClicked = function (linkElement) {
         var menu = this.menu[0];
@@ -457,12 +636,13 @@ var AppComponent = (function () {
         el[0].classList.toggle('menuActive');
         this.menuElements[linkElement].classList.toggle('menuActive');
         menu.classList.toggle('open');
+        this.buttonMenu[0].classList.toggle('active');
     };
     AppComponent = __decorate([
         __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["_5" /* Component */])({
             selector: 'app-root',
-            template: __webpack_require__(668),
-            styles: [__webpack_require__(663)]
+            template: __webpack_require__(671),
+            styles: [__webpack_require__(665)]
         }), 
         __metadata('design:paramtypes', [])
     ], AppComponent);
@@ -472,20 +652,21 @@ var AppComponent = (function () {
 
 /***/ }),
 
-/***/ 507:
+/***/ 509:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__graphics_graphics_component__ = __webpack_require__(330);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__home_home_component__ = __webpack_require__(331);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__angular_platform_browser__ = __webpack_require__(102);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__angular_platform_browser__ = __webpack_require__(75);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__angular_core__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__angular_forms__ = __webpack_require__(465);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__angular_http__ = __webpack_require__(471);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__app_component__ = __webpack_require__(506);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__angular_forms__ = __webpack_require__(467);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__angular_http__ = __webpack_require__(473);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__app_component__ = __webpack_require__(508);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_7__console_console_component__ = __webpack_require__(329);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_8__connect_connect_component__ = __webpack_require__(328);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_9__app_routing__ = __webpack_require__(508);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_9__impressum_impressum_component__ = __webpack_require__(332);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_10__app_routing__ = __webpack_require__(510);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return AppModule; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -506,6 +687,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 
 
 
+
 var AppModule = (function () {
     function AppModule() {
     }
@@ -515,13 +697,14 @@ var AppModule = (function () {
                 __WEBPACK_IMPORTED_MODULE_6__app_component__["a" /* AppComponent */],
                 __WEBPACK_IMPORTED_MODULE_7__console_console_component__["a" /* ConsoleComponent */],
                 __WEBPACK_IMPORTED_MODULE_8__connect_connect_component__["a" /* ConnectComponent */],
+                __WEBPACK_IMPORTED_MODULE_9__impressum_impressum_component__["a" /* ImpressumComponent */],
                 __WEBPACK_IMPORTED_MODULE_1__home_home_component__["a" /* HomeComponent */], __WEBPACK_IMPORTED_MODULE_0__graphics_graphics_component__["a" /* GraphicsComponent */]
             ],
             imports: [
                 __WEBPACK_IMPORTED_MODULE_2__angular_platform_browser__["a" /* BrowserModule */],
                 __WEBPACK_IMPORTED_MODULE_4__angular_forms__["a" /* FormsModule */],
                 __WEBPACK_IMPORTED_MODULE_5__angular_http__["a" /* HttpModule */],
-                __WEBPACK_IMPORTED_MODULE_9__app_routing__["a" /* appRoutes */]
+                __WEBPACK_IMPORTED_MODULE_10__app_routing__["a" /* appRoutes */]
             ],
             providers: [],
             bootstrap: [__WEBPACK_IMPORTED_MODULE_6__app_component__["a" /* AppComponent */]]
@@ -534,16 +717,18 @@ var AppModule = (function () {
 
 /***/ }),
 
-/***/ 508:
+/***/ 510:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_router__ = __webpack_require__(495);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_router__ = __webpack_require__(497);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__home_home_component__ = __webpack_require__(331);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__console_console_component__ = __webpack_require__(329);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__connect_connect_component__ = __webpack_require__(328);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__graphics_graphics_component__ = __webpack_require__(330);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__impressum_impressum_component__ = __webpack_require__(332);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return appRoutes; });
+
 
 
 
@@ -570,6 +755,10 @@ var routes = [
     {
         path: 'graphics',
         component: __WEBPACK_IMPORTED_MODULE_4__graphics_graphics_component__["a" /* GraphicsComponent */]
+    },
+    {
+        path: 'impressum',
+        component: __WEBPACK_IMPORTED_MODULE_5__impressum_impressum_component__["a" /* ImpressumComponent */]
     }
 ];
 var appRoutes = __WEBPACK_IMPORTED_MODULE_0__angular_router__["a" /* RouterModule */].forRoot(routes, { useHash: true });
@@ -577,7 +766,7 @@ var appRoutes = __WEBPACK_IMPORTED_MODULE_0__angular_router__["a" /* RouterModul
 
 /***/ }),
 
-/***/ 509:
+/***/ 511:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -593,83 +782,154 @@ var environment = {
 
 /***/ }),
 
-/***/ 663:
-/***/ (function(module, exports) {
-
-module.exports = ".main-content {\r\n  margin: 0;\r\n  padding: 0;\r\n}\r\n\r\n.menu {\r\n  background: #47a3da;\r\n  position: fixed;\r\n  width: 240px;\r\n  height: 100%;\r\n  top: 0;\r\n  z-index: 1000;\r\n  left: -240px;\r\n  -webkit-transition: all 0.3s ease;\r\n  transition: all 0.3s ease;\r\n}\r\n\r\n.menu.open {\r\n  left: 0px;\r\n}\r\n\r\n.menu h3 {\r\n  color: #afdefa;\r\n  font-size: 1.9em;\r\n  padding: 20px;\r\n  margin: 0;\r\n  font-weight: 300;\r\n  background: #0d77b6;\r\n}\r\n\r\n.menu a {\r\n  display: block;\r\n  color: #fff;\r\n  font-size: 1.1em;\r\n  font-weight: 300;\r\n  border-bottom: 1px solid #258ecd;\r\n  padding: 1em;\r\n  text-decoration: none;\r\n  cursor: pointer;\r\n}\r\n\r\n/*.menu a:hover*/\r\n.menuActive {\r\n  background: #258ecd;\r\n  /*text-decoration: none;*/\r\n}\r\n\r\n.menu a:active {\r\n  background: #afdefa;\r\n  color: #47a3da;\r\n  text-decoration: none;\r\n}\r\n\r\n@media screen and (max-height: 26.375em) {\r\n  .menu {\r\n    font-size: 90%;\r\n    width: 190px;\r\n    left: -190px;\r\n  }\r\n}\r\n"
-
-/***/ }),
-
-/***/ 664:
-/***/ (function(module, exports) {
-
-module.exports = "p {\r\n  text-align: center;\r\n}\r\n\r\n.btn-choose {\r\n  float: left;\r\n  margin: 5%;\r\n}\r\n\r\n.error {\r\n  display: none;\r\n}\r\n\r\n.manual {\r\n  display: none;\r\n}\r\n\r\n.btn.manual {\r\n  position: absolute;\r\n  top: 500px;\r\n  left: 20%;\r\n  z-index: 100000;\r\n}\r\n\r\n.joyStickDiv {\r\n  position: absolute;\r\n  left: 0;\r\n  top: 0;\r\n  width: 100%;\r\n  height: 100%;\r\n}\r\n"
-
-/***/ }),
-
 /***/ 665:
 /***/ (function(module, exports) {
 
-module.exports = ".cmdWindow {\r\n  background: #000;\r\n  border: 3px groove #ccc;\r\n  color: #ccc;\r\n  padding: 5px;\r\n  width: 80%;\r\n  height: 250px;\r\n  position: absolute;\r\n  left: 10%;\r\n  top: 150px;\r\n  font-size: 8pt;\r\n  overflow-y: scroll;\r\n  display: none;\r\n}\r\n\r\n.cmdList {\r\n  list-style-type: none;\r\n  margin: 0;\r\n  padding: 0;\r\n  width: 100%;\r\n  /*height: 100%;*/\r\n}\r\n\r\n#inSend {\r\n  position: absolute;\r\n  top: 65%;\r\n}\r\n\r\n#btnSend {\r\n  position: absolute;\r\n  top: 70%;\r\n}\r\n"
+module.exports = ".jumbotron {\r\n  margin-top: 5%;\r\n  text-align: left;\r\n  border: none;\r\n  border-radius: 0;\r\n  background-color: #ebf0f5;\r\n  background-image: -webkit-linear-gradient(#becdd7, #ebf0f5, #becdd7);\r\n  background-image: linear-gradient(#becdd7, #ebf0f5, #becdd7);\r\n  border-top: 1px solid #879baa;\r\n  border-bottom: 1px solid #879baa;\r\n}\r\n\r\n.fußleiste {\r\n  position: absolute;\r\n  bottom: 0;\r\n  width: 100%;\r\n  text-align: center;\r\n  font-size: 0.7em;\r\n  background-color: #ebf0f5;\r\n  background-image: -webkit-linear-gradient(top, #ebf0f5, #becdd7);\r\n  background-image: linear-gradient(to bottom, #ebf0f5, #becdd7);\r\n  color: #000000;\r\n  border-top: 1px solid black;\r\n  padding: 1%;\r\n}\r\n\r\n.main-content {\r\n  margin: 0;\r\n  padding: 0;\r\n}\r\n\r\n#showMenu {\r\n  position: absolute;\r\n  top: 2%;\r\n  left: 84%;\r\n  background-color: #41aaaa;\r\n  background-image: -webkit-linear-gradient(top, #41aaaa, #00646e);\r\n  background-image: linear-gradient(to bottom, #41aaaa, #00646e);\r\n  box-shadow: inset 0 0 0 1px #004b55;\r\n  border: none;\r\n  border-radius: 5px;\r\n  padding: 5px 15px;\r\n  -webkit-appearance: none;\r\n     -moz-appearance: none;\r\n          appearance: none;\r\n  color: #ffffff;\r\n}\r\n\r\n#showMenu:active {\r\n  box-shadow: inset 0 0 0 1px #004b55,inset 0 5px 30px #003c46;\r\n  outline: none;\r\n}\r\n\r\n#showMenu:focus {\r\n  outline: none;\r\n}\r\n\r\n#showMenu.inactive {\r\n  background-color: #becdd7;\r\n  background-image: -webkit-linear-gradient(top, #becdd7, #879baa);\r\n  background-image: linear-gradient(to bottom, #becdd7, #879baa);\r\n  box-shadow: inset 0 0 0 1px #3c464b;\r\n  color: #ebf0f5;\r\n}\r\n\r\n#showMenu.inactive:active {\r\n  box-shadow: 0;\r\n}\r\n\r\n.menu {\r\n  background: #41aaaa;\r\n  position: fixed;\r\n  width: 240px;\r\n  height: 100%;\r\n  top: 0;\r\n  z-index: 1000;\r\n  left: -240px;\r\n  -webkit-transition: all 0.3s ease;\r\n  transition: all 0.3s ease;\r\n}\r\n\r\n.menu.open {\r\n  left: 0px;\r\n}\r\n\r\n.menu h3 {\r\n  color: #78cdcd;\r\n  font-size: 1.9em;\r\n  padding: 20px;\r\n  margin: 0;\r\n  font-weight: 300;\r\n  background: #00646e;\r\n}\r\n\r\n.menu a {\r\n  display: block;\r\n  color: #fff;\r\n  font-size: 1.1em;\r\n  font-weight: 300;\r\n  border-bottom: 1px solid #239196;\r\n  padding: 1em;\r\n  text-decoration: none;\r\n  cursor: pointer;\r\n}\r\n\r\n.menuActive {\r\n  background: #239196;\r\n}\r\n\r\n.menu a:active {\r\n  background: #78cdcd;\r\n  color: #239196;\r\n  text-decoration: none;\r\n}\r\n\r\n@media screen and (max-height: 26.375em) {\r\n  .menu {\r\n    font-size: 90%;\r\n    width: 190px;\r\n    left: -190px;\r\n  }\r\n}\r\n"
 
 /***/ }),
 
 /***/ 666:
 /***/ (function(module, exports) {
 
-module.exports = ""
+module.exports = "p {\r\n  text-align: center;\r\n}\r\n\r\n.btn-choose {\r\n  float: left;\r\n  margin: 5%;\r\n}\r\n\r\n.btn-end {\r\n  position: absolute;\r\n  top: 80%;\r\n  left: 5%;\r\n}\r\n\r\n.error {\r\n  display: none;\r\n}\r\n\r\n.manual {\r\n  display: none;\r\n}\r\n\r\n.btn.manual {\r\n  position: absolute;\r\n  top: 80%;\r\n  left: 5%;\r\n  z-index: 100000;\r\n}\r\n\r\n.joyStickDiv {\r\n  position: absolute;\r\n  left: 0;\r\n  top: 0;\r\n  width: 100%;\r\n  height: 100%;\r\n}\r\n\r\n.switchDiv {\r\n  position: absolute;\r\n  top: 80%;\r\n  left: 55%;\r\n}\r\n\r\n.switchFloatie {\r\n  float: left;\r\n}\r\n\r\n.switch {\r\n  /*margin: 50px auto;*/\r\n  width: 80px;\r\n  height: 80px;\r\n  /*position: absolute;\r\n  top: 70%;\r\n  left: 70%;*/\r\n}\r\n\r\n.switch label {\r\n  width: 100%;\r\n  height: 100%;\r\n  position: relative;\r\n  display: block;\r\n  border-radius: 50%;\r\n  background: #eaeaea;\r\n  box-shadow:\r\n      0 3px 5px rgba(0,0,0,0.25),\r\n      inset 0 1px 0 rgba(255,255,255,0.3),\r\n      inset 0 -5px 5px rgba(100,100,100,0.1),\r\n      inset 0 5px 5px rgba(255,255,255,0.3);\r\n}\r\n\r\n.switch label:after {\r\n  content: \"\";\r\n  position: absolute;\r\n  top: -8%; right: -8%; bottom: -8%; left: -8%;\r\n  z-index: -1;\r\n  border-radius: inherit;\r\n  background: #ddd;\r\n  background: -webkit-gradient(linear, 0 0, 0 100%, from(#ccc), to(#fff));\r\n  background: -webkit-linear-gradient(#ccc, #fff);\r\n  background: linear-gradient(#ccc, #fff);\r\n  box-shadow:\r\n    inset 0 2px 1px rgba(0,0,0,0.15),\r\n    0 2px 5px rgba(200,200,200,0.1);\r\n}\r\n\r\n.switch label:before {\r\n  content: \"\";\r\n  position: absolute;\r\n  width: 20%;\r\n  height: 20%;\r\n  border-radius: inherit;\r\n  left: 40%;\r\n  top: 40%;\r\n  background: #969696;\r\n  background: -webkit-radial-gradient(40% 35%, #ccc, #969696 60%);\r\n  background: radial-gradient(40% 35%, #ccc, #969696 60%);\r\n  box-shadow:\r\n      inset 0 2px 4px 1px rgba(0,0,0,0.3),\r\n      0 1px 0 rgba(255,255,255,1),\r\n      inset 0 1px 0 white;\r\n}\r\n\r\n.switch input {\r\n  top: 0;\r\n  right: 0;\r\n  bottom: 0;\r\n  left: 0;\r\n  opacity: 0;\r\n  z-index: 100;\r\n  position: absolute;\r\n  width: 100%;\r\n  height: 100%;\r\n  cursor: pointer;\r\n}\r\n\r\n.switch input:checked ~ label {\r\n  background: #dedede;\r\n  background: -webkit-gradient(linear, 0 0, 0 100%, from(#dedede), to(#fdfdfd));\r\n  background: -webkit-linear-gradient(#dedede, #fdfdfd);\r\n  background: linear-gradient(#dedede, #fdfdfd);\r\n}\r\n\r\n.switch input:checked ~ label:before {\r\n  background: #25d025;\r\n  background: -webkit-radial-gradient(40% 35%, #5aef5a, #25d025 60%);\r\n  background: radial-gradient(40% 35%, #5aef5a, #25d025 60%);\r\n  box-shadow:\r\n      inset 0 3px 5px 1px rgba(0,0,0,0.1),\r\n      0 1px 0 rgba(255,255,255,0.4),\r\n      0 0 10px 2px rgba(0, 210, 0, 0.5);\r\n}\r\n\r\n.warn input:checked ~ label:before {\r\n  background: #ffcc00;\r\n  background: -webkit-radial-gradient(40% 35%, #ffff66, #ffcc00 60%);\r\n  background: radial-gradient(40% 35%, #ffff66, #ffcc00 60%);\r\n  box-shadow:\r\n      inset 0 3px 5px 1px rgba(0,0,0,0.1),\r\n      0 1px 0 rgba(255,255,255,0.4),\r\n      0 0 10px 2px rgba(255, 255, 0, 0.5);\r\n}\r\n\r\n.stop input:checked ~ label:before {\r\n  background: #ff0000;\r\n  background: -webkit-radial-gradient(40% 35%, #ff5050, #ff0000 60%);\r\n  background: radial-gradient(40% 35%, #ff5050, #ff0000 60%);\r\n  box-shadow:\r\n      inset 0 3px 5px 1px rgba(0,0,0,0.1),\r\n      0 1px 0 rgba(255,255,255,0.4),\r\n      0 0 10px 2px rgba(255, 0, 0, 0.5);\r\n}\r\n\r\n\r\n\r\n.rightMotor {\r\n  float: right;\r\n}\r\n\r\n.leftMotor {\r\n  float: left;\r\n}\r\n\r\n\r\n/*********************\r\n * Graph Bars styles *\r\n *********************/\r\n\r\n/* Bar wrapper - hides the inner bar when it goes below the bar, required */\r\n.bar-wrapper {\r\n    overflow: hidden;\r\n}\r\n/* Bar container - this guy is a real parent of a bar's parts - they all are positioned relative to him */\r\n.bar-container, .bar-container-down {\r\n    position: relative;\r\n    margin-top: 2.5em; /* should be at least equal to the top offset of background casing */\r\n    /* because back casing is positioned higher than actual bar */\r\n    width: 12.5em; /* required, we have to define the width of a bar */\r\n}\r\n\r\n/** BACK CASING **/\r\n/* Back panel */\r\n.bar-background {\r\n    width: 10em;\r\n    height: 100%;\r\n    position: absolute;\r\n    top: -2.5em;\r\n    left: 2.5em;\r\n    z-index: 1; /* just for reference */\r\n}\r\n\r\n.bar-background:before,\r\n.bar-background:after {\r\n    content: \"\";\r\n    position: absolute;\r\n}\r\n\r\n/* Bottom panel */\r\n.bar-background:before {\r\n    bottom: -2.5em;\r\n    right: 1.25em;\r\n    width: 10em;\r\n    height: 2.5em;\r\n\t-webkit-backface-visibility: hidden;\r\n    -webkit-transform: skew(-45deg);\r\n    transform: skew(-45deg);\r\n}\r\n\r\n/* Left back panel */\r\n.bar-background:after {\r\n    top: 1.25em;\r\n    right: 10em;\r\n    width: 2.5em;\r\n    height: 100%;\r\n\t-webkit-backface-visibility: hidden;\r\n    /* skew only the Y-axis */\r\n    -webkit-transform: skew(0deg, -45deg);\r\n    transform: skew(0deg, -45deg);\r\n}\r\n\r\n/** FRONT CASING **/\r\n/* Front panel */\r\n.bar-foreground {\r\n    z-index: 3; /* be above .bar-background and .bar-inner */\r\n}\r\n.bar-foreground,\r\n.bar-inner {\r\n    position: absolute;\r\n    width: 10em;\r\n    height: 100%;\r\n    top: 0;\r\n    left: 0;\r\n}\r\n\r\n.bar-foreground:before,\r\n.bar-foreground:after,\r\n.bar-inner:before,\r\n.bar-inner:after {\r\n    content: \"\";\r\n    position: absolute;\r\n}\r\n\r\n/* Right front panel */\r\n.bar-foreground:before,\r\n.bar-inner:before {\r\n    top: -1.25em;\r\n    right: -2.5em;\r\n    width: 2.5em;\r\n    height: 100%;\r\n    background-color: rgba(160, 160, 160, .27);\r\n\r\n    -webkit-transform: skew(0deg, -45deg);\r\n    transform: skew(0deg, -45deg);\r\n}\r\n\r\n/* Top front panel */\r\n.bar-foreground:after,\r\n.bar-inner:after {\r\n    top: -2.5em;\r\n    right: -1.25em;\r\n    width: 100%;\r\n    height: 2.5em;\r\n    background-color: rgba(160, 160, 160, .2);\r\n\r\n    -webkit-transform: skew(-45deg);\r\n    transform: skew(-45deg);\r\n}\r\n\r\n/** BAR's inner block **/\r\n.bar-inner {\r\n    z-index: 2; /* to be above .bar-background */\r\n    top: auto; /* reset position top */\r\n    background-color: rgba(5, 62, 123, .6);\r\n    height: 0;\r\n    bottom: -2.5em;\r\n    color: transparent; /* hide text values */\r\n\r\n    -webkit-transition: height 0.8s ease-in-out, bottom 0.8s ease-in-out;\r\n    transition: height 0.8s ease-in-out, bottom 0.8s ease-in-out;\r\n}\r\n\r\n.bar-inner-down {\r\n  top: 0%;\r\n  bottom: -2.5em;\r\n}\r\n\r\n/* Right panel */\r\n.bar-inner:before {\r\n    background-color: rgba(5, 62, 123, .6);\r\n}\r\n\r\n/* Top panel */\r\n.bar-inner:after {\r\n    background-color: rgba(47, 83, 122, .7);\r\n}\r\n\r\n/****************\r\n * SIZES        *\r\n ****************/\r\n /* Size of the Graph */\r\n.bar-container, .bar-container-down {\r\n  font-size: 4px;\r\n}\r\n/* Height of Bars */\r\n.bar-container, .bar-container-down {\r\n  height: 40em;\r\n}\r\n\r\n/****************\r\n *    Colors    *\r\n ****************/\r\n/* Bar's Back side */\r\n.bar-background {\r\n  background-color: rgba(160, 160, 160, .1);\r\n}\r\n/* Bar's Bottom side */\r\n.bar-background:before {\r\n  background-color: rgba(160, 160, 160, .2);\r\n}\r\n/* Bar's Left Back side */\r\n.bar-background:after {\r\n  background-color: rgba(160, 160, 160, .05);\r\n}\r\n/* Bar's Front side */\r\n.bar-foreground {\r\n  background-color: rgba(160, 160, 160, .1);\r\n}\r\n/* Bar's inner block */\r\n.bar-inner,\r\n.bar-inner:before { background-color: rgba(65, 170, 170, .6); }\r\n.bar-inner:after { background-color: rgba(0, 100, 110, .7); }\r\n\r\n.bar-inner-down,\r\n.bar-inner-down:before { background-color: rgba(175, 35, 95, .6); }\r\n.bar-inner-down:after { background-color: rgba(100, 25, 70, .7); }\r\n"
 
 /***/ }),
 
 /***/ 667:
 /***/ (function(module, exports) {
 
-module.exports = ""
+module.exports = ".cmdWindow {\r\n  background: #000;\r\n  border: 3px groove #ccc;\r\n  color: #ccc;\r\n  padding: 5px;\r\n  width: 80%;\r\n  height: 250px;\r\n  position: absolute;\r\n  left: 10%;\r\n  top: 150px;\r\n  font-size: 8pt;\r\n  overflow-y: scroll;\r\n  display: none;\r\n}\r\n\r\n.cmdList {\r\n  list-style-type: none;\r\n  margin: 0;\r\n  padding: 0;\r\n  width: 100%;\r\n  /*height: 100%;*/\r\n}\r\n\r\n#inSend {\r\n  position: absolute;\r\n  top: 65%;\r\n}\r\n\r\n#btnSend {\r\n  position: absolute;\r\n  top: 70%;\r\n}\r\n\r\n#closeBtn {\r\n  position: absolute;\r\n  top: 80%;\r\n}\r\n\r\n.btn-primary {\r\n\r\n}\r\n"
 
 /***/ }),
 
 /***/ 668:
 /***/ (function(module, exports) {
 
-module.exports = "<div class=\"container main-content\">\n  <!--<nav class=\"navbar navbar-light bg-faded\">\n    <ul class=\"nav navbar-nav\">\n      <li class=\"nav-item\">\n        <a class=\"nav-link\" [routerLink]=\"['/home']\">Home</a>\n      </li>\n      <li class=\"nav-item\">\n        <a class=\"nav-link\" [routerLink]=\"['/connect']\">Connect</a>\n      </li>\n      <li class=\"nav-item\">\n        <a class=\"nav-link\" [routerLink]=\"['/console']\">Konsole</a>\n      </li>\n      <li class=\"nav-item\">\n        <a class=\"nav-link\" [routerLink]=\"['/graphics']\">3D</a>\n      </li>\n    </ul>\n  </nav>-->\n  <nav class=\"menu\" id=\"navMenu\">\n    <h3>Menü</h3>\n    <a [routerLink]=\"['/home']\" (click)=\"menuLinkClicked(0)\" class=\"linkEl\">Home</a>\n    <a [routerLink]=\"['/connect']\" (click)=\"menuLinkClicked(1)\" class=\"linkEl\">Steuern</a>\n    <a [routerLink]=\"['/console']\" (click)=\"menuLinkClicked(2)\" class=\"linkEl\">Konsole</a>\n    <a [routerLink]=\"['/graphics']\" (click)=\"menuLinkClicked(3)\" class=\"linkEl\">3D</a>\n    <a (click)=\"menuClicked()\">Close</a>\n  </nav>\n  <button id=\"showMenu\" class=\"menuButton\" (click)=\"menuClicked()\">Menü</button>\n  <!-- /navbar -->\n\n  <!-- Main component for a primary marketing message or call to action -->\n  <div class=\"jumbotron\">\n    <h1>Transportsystem</h1>\n  </div>\n\n  <router-outlet></router-outlet>\n\n</div> <!-- /container -->\n"
+module.exports = ""
 
 /***/ }),
 
 /***/ 669:
 /***/ (function(module, exports) {
 
-module.exports = "<!--<button type=\"button\" class=\"btn btn-prim btn-primary\" (click)=\"connect()\">Connect</button>-->\r\n<button type=\"button\" class=\"btn btn-prim\" (click)=\"connect()\">Connect</button>\r\n<!--<button type=\"button\" class=\"btn btn-prim\" (click)=\"init()\">Debug Init</button>-->\r\n\r\n<p class=\"hidden\" style=\"\">W&auml;hlen Sie den Fahr-Modus:</p>\r\n<!--<input type=\"text\" class=\"hidden\" placeholder=\"Kommando\" [(ngModel)]=\"command\">-->\r\n<button type=\"button\" class=\"btn btn-choose hidden\" (click)=\"auto()\">Automatik</button>\r\n<button type=\"button\" class=\"btn btn-choose hidden\" (click)=\"man()\">Manuell</button>\r\n\r\n\r\n<section class=\"loader\" style=\"display:none\">\r\n  <!-- the loading animation -->\r\n  <ul class=\"bokeh\">\r\n    <li></li>\r\n    <li></li>\r\n    <li></li>\r\n    <li></li>\r\n  </ul>\r\n</section>\r\n\r\n<p class=\"error\">ERROR: Verbindung zum WebSocket Server fehlgeschlagen! Sind Sie mit der WLAN Schnittstelle verbunden?</p>\r\n\r\n<!--<p class=\"hidden\">\r\n  X: <p id=\"textView1\"></p>\r\n  Y: <p id=\"textView2\"></p>\r\n  Angle: <p id=\"textView3\"></p>\r\n  Distance: <p id=\"textView4\"></p>\r\n  Direction: <p id=\"textView5\"></p>\r\n</p>-->\r\n\r\n<div id=\"debug1\" class=\"manual direction\" style=\"position:fixed; left:5%; top:30%; color:grey;\">\r\n  Direction: Base\r\n</div>\r\n\r\n<div id=\"debug2\" class=\"manual distance\" style=\"position:fixed; left:5%; top:34%; color:grey;\">\r\n  Distance: 0\r\n</div>\r\n\r\n<div class=\"manual joyStickDiv\"></div>\r\n\r\n<button type=\"button\" class=\"btn manual\" (click)=\"back()\">Zur&uuml;ck</button>\r\n\r\n<ul>\r\n  <li *ngFor=\"let h of history\">{{ h }}</li>\r\n</ul>\r\n"
+module.exports = ""
 
 /***/ }),
 
 /***/ 670:
 /***/ (function(module, exports) {
 
-module.exports = "<button type=\"button\" id=\"btn-primary\" class=\"btn btn-primary\" (click)=\"connect()\">Connect</button>\n\n<section class=\"loader\" style=\"display:none\">\n  <!-- the loading animation -->\n  <ul class=\"bokeh\">\n    <li></li>\n    <li></li>\n    <li></li>\n    <li></li>\n  </ul>\n</section>\n\n<p class=\"error\" style=\"display:none\">ERROR: Verbindung zum WebSocket Server fehlgeschlagen! Sind Sie mit der WLAN Schnittstelle verbunden?</p>\n\n<div class=\"cmdWindow\">\n  <ul class=\"cmdList\">\n    <li class=\"cmdItem\" *ngFor=\"let h of history\">{{ h }}</li>\n  </ul>\n</div>\n\n<input type=\"text\" id=\"inSend\" class=\"hidden\" placeholder=\"Kommando\" [(ngModel)]=\"command\">\n<button type=\"button\" id=\"btnSend\" class=\"btn hidden\" (click)=\"send()\">Senden</button>\n"
+module.exports = ""
 
 /***/ }),
 
 /***/ 671:
 /***/ (function(module, exports) {
 
-module.exports = "<!--<div id=\"container\" style=\"width: 100%; height: 400px\"></div>-->\n<!--<div ng-include=\"'http://192.168.0.1/html/index.html'\"></div>-->\n<!--<iframe class=\"successFrame\" src=\"http://192.168.0.1/html/index.html\" frameborder=\"0\" width=\"100%\" height=\"400px\" style=\"display: none\"></iframe>-->\n<section class=\"loader\">\n  <!-- the loading animation -->\n  <ul class=\"bokeh\">\n    <li></li>\n    <li></li>\n    <li></li>\n    <li></li>\n  </ul>\n</section>\n\n<iframe class=\"successFrame\" [src]=\"url\" frameborder=\"0\" width=\"100%\" height=\"400px\" style=\"display: none\"></iframe>\n<div class=\"errorDiv\" id=\"container\" style=\"display: none\">Fehler: die Verbindung zu Dobby steht offenbar nicht. Sind Sie mit der WLAN-Schnittstelle verbunden?</div>\n"
+module.exports = "<div class=\"container main-content\">\n  <!--<nav class=\"navbar navbar-light bg-faded\">\n    <ul class=\"nav navbar-nav\">\n      <li class=\"nav-item\">\n        <a class=\"nav-link\" [routerLink]=\"['/home']\">Home</a>\n      </li>\n      <li class=\"nav-item\">\n        <a class=\"nav-link\" [routerLink]=\"['/connect']\">Connect</a>\n      </li>\n      <li class=\"nav-item\">\n        <a class=\"nav-link\" [routerLink]=\"['/console']\">Konsole</a>\n      </li>\n      <li class=\"nav-item\">\n        <a class=\"nav-link\" [routerLink]=\"['/graphics']\">3D</a>\n      </li>\n    </ul>\n  </nav>-->\n  <nav class=\"menu\" id=\"navMenu\">\n    <h3>Menü</h3>\n    <a [routerLink]=\"['/home']\" (click)=\"menuLinkClicked(0)\" class=\"linkEl\">Home</a>\n    <a [routerLink]=\"['/connect']\" (click)=\"menuLinkClicked(1)\" class=\"linkEl\">Steuern</a>\n    <a [routerLink]=\"['/console']\" (click)=\"menuLinkClicked(2)\" class=\"linkEl\">Konsole</a>\n    <a [routerLink]=\"['/graphics']\" (click)=\"menuLinkClicked(3)\" class=\"linkEl\">3D</a>\n    <a [routerLink]=\"['/impressum']\" (click)=\"menuLinkClicked(4)\" class=\"linkEl\">Impressum</a>\n    <a (click)=\"menuClicked()\">Close</a>\n  </nav>\n  <button id=\"showMenu\" class=\"menuButton\" (click)=\"menuClicked()\">&#9776;</button>\n  <!-- /navbar -->\n\n  <!-- Main component for a primary marketing message or call to action -->\n  <div class=\"jumbotron\">\n    <h1>Transportsystem</h1>\n  </div>\n\n  <div class=\"fußleiste\">\n    &#169; 2017 - Transportsystem - Huentz, Kaiser, Stumpf\n  </div>\n\n  <router-outlet></router-outlet>\n\n</div> <!-- /container -->\n"
 
 /***/ }),
 
 /***/ 672:
 /***/ (function(module, exports) {
 
-module.exports = "<img src=\"../../assets/logo.png\" alt=\"Logo\">\n"
+module.exports = "<!--<button type=\"button\" class=\"btn btn-prim btn-primary\" (click)=\"connect()\">Connect</button>-->\r\n<button type=\"button\" class=\"btn btn-prim\" (click)=\"connect()\">Connect</button>\r\n<!--<button type=\"button\" class=\"btn btn-prim\" (click)=\"init()\">Debug Init</button>-->\r\n\r\n<p class=\"hidden\" style=\"\">W&auml;hlen Sie den Fahr-Modus:</p>\r\n<!--<input type=\"text\" class=\"hidden\" placeholder=\"Kommando\" [(ngModel)]=\"command\">-->\r\n<button type=\"button\" class=\"btn btn-choose hidden\" (click)=\"auto()\">Automatik</button>\r\n<button type=\"button\" class=\"btn btn-choose hidden\" (click)=\"man()\">Manuell</button>\r\n<button type=\"button\" class=\"btn btn-choose btn-end hidden\" (click)=\"endWs()\">Beenden</button>\r\n\r\n\r\n<section class=\"loader\" style=\"display:none\">\r\n  <!-- the loading animation -->\r\n  <ul class=\"bokeh\">\r\n    <li></li>\r\n    <li></li>\r\n    <li></li>\r\n    <li></li>\r\n  </ul>\r\n</section>\r\n\r\n<p class=\"error\">ERROR: Verbindung zum WebSocket Server fehlgeschlagen! Sind Sie mit der WLAN Schnittstelle verbunden?</p>\r\n\r\n<div class=\"auto\" style=\"display:none;\">\r\n  <iframe class=\"successFrame\" [src]=\"url\" frameborder=\"0\" width=\"100%\" height=\"400px\"></iframe>\r\n</div>\r\n\r\n<div id=\"debug1\" class=\"manual direction\" style=\"position:fixed; left:5%; top:25%; color:grey;\">\r\n  Direction: Base\r\n</div>\r\n\r\n<div id=\"debug2\" class=\"manual distance\" style=\"position:fixed; left:5%; top:29%; color:grey;\">\r\n  Distance: 0\r\n</div>\r\n\r\n<div class=\"manual joyStickDiv\"></div>\r\n\r\n<div class=\"leftMotor\">\r\n  <div class=\"bar-wrapper rightMotorUp manual\">\r\n    <div class=\"bar-container\">\r\n      <div class=\"bar-background\"></div>\r\n      <div class=\"bar-inner\" style=\"height: 0%; bottom: 0;\">0</div>\r\n      <div class=\"bar-foreground\"></div>\r\n    </div>\r\n  </div>\r\n  <div class=\"bar-wrapper rightMotorDown bar-wrapper-down manual\">\r\n    <div class=\"bar-container-down\">\r\n      <div class=\"bar-background\"></div>\r\n      <div class=\"bar-inner bar-inner-down\" style=\"height: 0%; bottom: 0;\">0</div>\r\n      <div class=\"bar-foreground\"></div>\r\n    </div>\r\n  </div>\r\n</div>\r\n\r\n<div class=\"rightMotor\">\r\n  <div class=\"bar-wrapper rightMotorUp manual\">\r\n    <div class=\"bar-container\">\r\n      <div class=\"bar-background\"></div>\r\n      <div class=\"bar-inner\" style=\"height: 0%; bottom: 0;\">0</div>\r\n      <div class=\"bar-foreground\"></div>\r\n    </div>\r\n  </div>\r\n  <div class=\"bar-wrapper rightMotorDown bar-wrapper-down manual\">\r\n    <div class=\"bar-container-down\">\r\n      <div class=\"bar-background\"></div>\r\n      <div class=\"bar-inner bar-inner-down\" style=\"height: 0%; bottom: 0;\">0</div>\r\n      <div class=\"bar-foreground\"></div>\r\n    </div>\r\n  </div>\r\n</div>\r\n\r\n<button type=\"button\" class=\"btn manual auto\" (click)=\"back()\">Zur&uuml;ck</button>\r\n\r\n<div class=\"manual switchDiv\">\r\n  <div class=\"switchFloatie\">Sensor</div>\r\n  <div class=\"switch switchFloatie\">\r\n    <input type=\"checkbox\" class=\"checkSens\" (click)=\"clickSens()\" checked />\r\n    <label></label>\r\n  </div>\r\n</div>\r\n\r\n<ul>\r\n  <li *ngFor=\"let h of history\">{{ h }}</li>\r\n</ul>\r\n"
 
 /***/ }),
 
-/***/ 688:
+/***/ 673:
+/***/ (function(module, exports) {
+
+module.exports = "<button type=\"button\" id=\"btn-primary\" class=\"btn btn-primary\" (click)=\"connect()\">Connect</button>\n\n<section class=\"loader\" style=\"display:none\">\n  <!-- the loading animation -->\n  <ul class=\"bokeh\">\n    <li></li>\n    <li></li>\n    <li></li>\n    <li></li>\n  </ul>\n</section>\n\n<p class=\"error\" style=\"display:none; text-align: center;\">ERROR: Verbindung zum WebSocket Server fehlgeschlagen! Sind Sie mit der WLAN Schnittstelle verbunden?</p>\n\n<div class=\"cmdWindow\">\n  <ul class=\"cmdList\">\n    <li class=\"cmdItem\" *ngFor=\"let h of history\">{{ h }}</li>\n  </ul>\n</div>\n\n<input type=\"text\" id=\"inSend\" class=\"hidden\" placeholder=\"Kommando\" [(ngModel)]=\"command\">\n<button type=\"button\" id=\"btnSend\" class=\"btn hidden\" (click)=\"send()\">Senden</button>\n<button type=\"button\" id=\"closeBtn\" class=\"btn hidden\" (click)=\"endWs()\">Beenden</button>\n"
+
+/***/ }),
+
+/***/ 674:
+/***/ (function(module, exports) {
+
+module.exports = "<!--<div id=\"container\" style=\"width: 100%; height: 400px\"></div>-->\n<!--<div ng-include=\"'http://192.168.0.1/html/index.html'\"></div>-->\n<!--<iframe class=\"successFrame\" src=\"http://192.168.0.1/html/index.html\" frameborder=\"0\" width=\"100%\" height=\"400px\" style=\"display: none\"></iframe>-->\n<section class=\"loader\">\n  <!-- the loading animation -->\n  <ul class=\"bokeh\">\n    <li></li>\n    <li></li>\n    <li></li>\n    <li></li>\n  </ul>\n</section>\n\n<iframe class=\"successFrame\" [src]=\"url\" frameborder=\"0\" width=\"100%\" height=\"400px\" style=\"display: none\"></iframe>\n<div class=\"errorDiv\" id=\"container\" style=\"display: none; text-align: center;\">Fehler: die Verbindung zu Dobby steht offenbar nicht. Sind Sie mit der WLAN-Schnittstelle verbunden?</div>\n"
+
+/***/ }),
+
+/***/ 675:
+/***/ (function(module, exports) {
+
+module.exports = "<img src=\"assets/logo.png\" alt=\"Logo\" style=\"width:80%; position:fixed; left:10%; top:40%;\"/>\r\n"
+
+/***/ }),
+
+/***/ 676:
+/***/ (function(module, exports) {
+
+module.exports = "<div style=\"height: 400px; padding: 3%; overflow-y: scroll;\">\n  <h4>Dobby-App v2.10</h4>\n  <p>\n    Diese App ist Teil des Dobby-Projektes, welches als Projekt für den Kurs Software-Engineering\n    der Dualen Hochschule Baden-Württemberg im dritten Semester startete und nun mit der Studienarbeit\n    des fünften und sechsten Semesters abgeschlossen wurde.\n  </p>\n\n  <br/>\n  <h4>Entwickler</h4>\n  <p>\n    Das Projekt wurde entwickelt von\n    <br/>\n    <img src=\"assets/Nico.png\" width=\"30%\" style=\"margin-left: auto; margin-right: 5%;\"/><img src=\"assets/Marie.png\" width=\"30%\" style=\"margin-left: auto; margin-right: 5%;\"/><img src=\"assets/Daniel.png\" width=\"30%\" style=\"margin-left: auto; margin-right: auto;\"/>\n    <i>Nicolas Huentz</i>, <i>Marie-Kristin Kaiser</i>  & <i>Daniel Stumpf</i>.\n  </p>\n\n  <br/>\n  <h4>Sponsoren</h4>\n  <p>\n    Dieses Projekt hätte ohne die tatkräftige Unterstützung folgender Sponsoren nicht abgeschlossen\n    werden können:\n    <br/><br/>\n    <img src=\"assets/firmen2.png\" width=\"100%\"/>\n  </p>\n\n  <br/>\n  <h4>Haftungsausschluss</h4>\n  <p>\n    Bitte beachten Sie, dass die App zu Lernzwecken entwickelt wurde und wir deswegen keine Garantie\n    für diese Software geben können.\n  </p>\n</div>\n"
+
+/***/ }),
+
+/***/ 692:
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;// The following lines allow the ping function to be loaded via commonjs, AMD,
+// and script tags, directly into window globals.
+// Thanks to https://github.com/umdjs/umd/blob/master/templates/returnExports.js
+(function (root, factory) { if (true) { !(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+				(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); } else if (typeof module === 'object' && module.exports) { module.exports = factory(); } else { root.ping = factory(); }
+}(this, function () {
+
+    /**
+     * Creates and loads an image element by url.
+     * @param  {String} url
+     * @return {Promise} promise that resolves to an image element or
+     *                   fails to an Error.
+     */
+    function request_image(url) {
+        return new Promise(function(resolve, reject) {
+            var img = new Image();
+            img.onload = function() { resolve(img); };
+            img.onerror = function() { reject(url); };
+            img.src = url + '?random-no-cache=' + Math.floor((1 + Math.random()) * 0x10000).toString(16);
+        });
+    }
+
+    /**
+     * Pings a url.
+     * @param  {String} url
+     * @param  {Number} multiplier - optional, factor to adjust the ping by.  0.3 works well for HTTP servers.
+     * @return {Promise} promise that resolves to a ping (ms, float).
+     */
+    function ping(url, multiplier) {
+        return new Promise(function(resolve, reject) {
+            var start = (new Date()).getTime();
+            var response = function() { 
+                var delta = ((new Date()).getTime() - start);
+                delta *= (multiplier || 1);
+                resolve(delta); 
+            };
+            request_image(url).then(response).catch(response);
+            
+            // Set a timeout for max-pings, 5s.
+            setTimeout(function() { reject(Error('Timeout')); }, 5000);
+        });
+    }
+    
+    return ping;
+}));
+
+/***/ }),
+
+/***/ 693:
 /***/ (function(module, exports) {
 
 var VirtualJoystick	= function(opts)
 {
 	opts			= opts			|| {};
 	this._container		= opts.container	|| document.body;
+	this._barMotorR = opts.rightMotor !== undefined ? opts.rightMotor : false;
+	this._barMotorRD = opts.rightMotorD !== undefined ? opts.rightMotorD : false;
+	this._barMotorL = opts.leftMotor !== undefined ? opts.leftMotor : false;
+  this._barMotorLD = opts.leftMotorD !== undefined ? opts.leftMotorD : false;
 	this._strokeStyle	= opts.strokeStyle	|| 'cyan';
 	this._stickEl		= opts.stickElement	|| this._buildJoystickStick();
 	this._baseEl		= opts.baseElement	|| this._buildJoystickBase();
@@ -781,42 +1041,7 @@ VirtualJoystick.touchScreenAvailable	= function()
 VirtualJoystick.prototype.deltaX	= function(){ return this._stickX - this._baseX;	}
 VirtualJoystick.prototype.deltaY	= function(){ return this._stickY - this._baseY;	}
 
-/*
-VirtualJoystick.prototype.up	= function(){
-	if( this._pressed === false )	return false;
-	var deltaX	= this.deltaX();
-	var deltaY	= this.deltaY();
-	if( deltaY >= 0 )				return false;
-	if( Math.abs(deltaX) > 2*Math.abs(deltaY) )	return false;
-	return true;
-}
-VirtualJoystick.prototype.down	= function(){
-	if( this._pressed === false )	return false;
-	var deltaX	= this.deltaX();
-	var deltaY	= this.deltaY();
-	if( deltaY <= 0 )				return false;
-	if( Math.abs(deltaX) > 2*Math.abs(deltaY) )	return false;
-	return true;
-}
-VirtualJoystick.prototype.right	= function(){
-	if( this._pressed === false )	return false;
-	var deltaX	= this.deltaX();
-	var deltaY	= this.deltaY();
-	if( deltaX <= 0 )				return false;
-	if( Math.abs(deltaY) > 2*Math.abs(deltaX) )	return false;
-	return true;
-}
-VirtualJoystick.prototype.left	= function(){
-	if( this._pressed === false )	return false;
-	var deltaX	= this.deltaX();
-	var deltaY	= this.deltaY();
-	if( deltaX >= 0 )				return false;
-	if( Math.abs(deltaY) > 2*Math.abs(deltaX) )	return false;
-	return true;
-}
-*/
-
-VirtualJoystick.prototype.up	= function(deltaX, deltaY){
+/*VirtualJoystick.prototype.up	= function(deltaX, deltaY){
 	if( deltaY >= 0 ) return false;
 	if( Math.abs(deltaX) > 2*Math.abs(deltaY) )	return false;
 	//if ( Math.abs(deltaX) > ( Math.tan(67.5)*Math.abs(deltaY) )) return false;
@@ -839,6 +1064,71 @@ VirtualJoystick.prototype.left	= function(deltaX, deltaY){
 	if( Math.abs(deltaY) > 2*Math.abs(deltaX) )	return false;
 	//if ( Math.abs(deltaY) > ( Math.tan(67.5)*Math.abs(deltaX) ) ) return false;
 	return true;
+}*/
+
+/*
+* return values:
+* - 0: up           - 6: down         - 12: center
+* - 1: up-right     - 7: down-left
+* - 2: up-r-right   - 8: down-l-left
+* - 3: right        - 9: left
+* - 4: down-r-right - 10:up-l-left
+* - 5: down-right   - 11:up-left
+*/
+
+VirtualJoystick.prototype.getDir = function(deltaX, deltaY) {
+  //test the four direction with at least one value first
+  if (deltaX == 0) {
+    if (deltaY == 0) return 12;
+    if (deltaY >0) return 6; //down
+    return 0; //up
+  }
+  if (deltaY == 0) {
+    if (deltaX >0) return 3; //right
+    return 9; //left
+  }
+
+  //not one exact direction
+  var alpha = this.getAlpha(deltaX, deltaY);
+
+  if (deltaY <0) {  //somewhere in the upper part
+    if (alpha <=27) return 0; //up
+    if (alpha <=(27+25)) {
+      if (deltaX>0) return 1; //up-right
+      return 11; //up-left
+    }
+    if (alpha <=(27+25+25)) {
+      if (deltaX>0) return 2; //up-r-right
+      return 10; //up-l-left
+    }
+    if (deltaX >0) return 3; //right
+    return 9; //left
+  } else { //somwhere in the lower part
+    if (alpha <=27) return 6; //down
+    if (alpha <=(27+25)) {
+      if (deltaX>0) return 5; //down-right
+      return 7; //down-left
+    }
+    if (alpha <=(27+25+25)) {
+      if (deltaX>0) return 4; //down-r-right
+      return 8; //down-l-left
+    }
+    if (deltaX >0) return 3; //right
+    return 9; //left
+  }
+}
+
+VirtualJoystick.prototype.getAlpha = function(deltaX, deltaY) {
+  var alpha = this.degrees(Math.atan(this.round(Math.abs(deltaX)/Math.abs(deltaY), 3)));
+  return alpha;
+}
+
+VirtualJoystick.prototype.round = function(number, dec) {
+  return +(Math.round(number + "e+" + dec)  + "e-" + dec);
+}
+
+VirtualJoystick.prototype.degrees = function(radians) {
+  return radians * 180 / Math.PI;
 }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -925,30 +1215,96 @@ VirtualJoystick.prototype.getDirection = function() {
   var deltaX	= this.deltaX();
   var deltaY	= this.deltaY();
 
-  if ( this.up(deltaX, deltaY) ) {            //so the stick is somewhere in the upper part
-    if ( this.left(deltaX, deltaY) ) {        //so the stick is "up left"
-      dir = 'up-left';
-    } else if ( this.right(deltaX, deltaY) ) {//so the stick is "up right"
-      dir = 'up-right';
-    } else {                                  //so the stick is "up"
+  switch(this.getDir(deltaX,deltaY)) {
+    case 0:
       dir = 'up';
-    }
-  } else if ( this.down(deltaX, deltaY) ) {   //so the stick is somewhere in the lower part
-    if ( this.left(deltaX, deltaY) ) {        //so the stick is "down left"
-        dir = 'down-left';
-      } else if ( this.right(deltaX, deltaY) ) {//so the stick is "down right"
-        dir = 'down-right';
-      } else {                                  //so the stick is "down"
+      break;
+    case 1:
+      dir = 'up-right';
+      break;
+    case 2:
+      dir = 'up-r-right';
+      break;
+    case 3:
+      dir = 'right';
+      break;
+    case 4:
+      dir = 'down-r-right';
+      break;
+    case 5:
+      dir = 'down-right';
+      break;
+    case 6:
       dir = 'down';
-    }
-  } else if ( this.left(deltaX, deltaY) ) {   //so the stick is "left"
-    dir = 'left';
-  } else if ( this.right(deltaX, deltaY) ) {  //so the stick is "right"
-    dir = 'right';
-  }                                           //if nothing is fitting for the direction, this means
-                                              //either something went horribly wrong
-                                              //or the stick is in default position
+      break;
+    case 7:
+      dir = 'down-left';
+      break;
+    case 8:
+      dir = 'down-l-left';
+      break;
+    case 9:
+      dir = 'left';
+      break;
+    case 10:
+      dir = 'up-l-left';
+      break;
+    case 11:
+      dir = 'up-left';
+      break;
+    default:
+      //do Nothing because it's either the center or something went wrong
+      break;
+  }
+
+  this.updateMotorBars();
   return dir;
+}
+
+VirtualJoystick.prototype.updateMotorBars = function() {
+  var dist = this.getDistance();
+  var switch_dist = Math.ceil(dist/9);
+  if(switch_dist == 1 || switch_dist == 0) {
+    dist = 0;
+  } else {
+    dist = (switch_dist*90)/10;
+  }
+  dist = Math.ceil(dist*(10/9));
+  /*
+   *  90 - 100%   45 - 50%
+   *  81 -  90%   36 - 40%
+   *  72 -  80%   27 - 30%
+   *  63 -  70%   18 - 20%
+   *  54 -  60%   00 -  0%
+   */
+
+  if (this._barMotorR == false || this._barMotorRD == false) {
+    //it's not defined so nothing is supposed to happen
+  } else {
+    if (this._rightMotor <= 0) {
+      this._barMotorR.style.height = "0%";
+      if(this._rightMotor == 0) {
+        this._barMotorRD.style.height = "0%";
+      } else this._barMotorRD.style.height = (dist*this._rightMotor*(-1)/100) + "%";
+    } else {
+      this._barMotorRD.style.height = "0%";
+      this._barMotorR.style.height = (dist*this._rightMotor/100) + "%";
+    }
+  }
+
+  if (this._barMotorL == false || this._barMotorLD == false) {
+    //it's not defined so nothing is supposed to happen
+  } else {
+    if (this._leftMotor <= 0) {
+      this._barMotorL.style.height = "0%";
+      if(this._leftMotor == 0) {
+        this._barMotorLD.style.height = "0%";
+      } else this._barMotorLD.style.height = (dist*this._leftMotor*(-1)/100) + "%";
+    } else {
+      this._barMotorLD.style.height = "0%";
+      this._barMotorL.style.height = (dist*this._leftMotor/100) + "%";
+    }
+  }
 }
 
 VirtualJoystick.prototype.getDistance = function() {
@@ -959,6 +1315,8 @@ VirtualJoystick.prototype.getDistance = function() {
   return stickDistance;
 }
 
+this._leftMotor = 0;
+this._rightMotor = 0;
 VirtualJoystick.prototype._calculateDirection = function() {
   var dir = 'Base';
 
@@ -966,29 +1324,73 @@ VirtualJoystick.prototype._calculateDirection = function() {
   var deltaX	= this.deltaX();
   var deltaY	= this.deltaY();
 
-  if ( this.up(deltaX, deltaY) ) {            //so the stick is somewhere in the upper part
-    if ( this.left(deltaX, deltaY) ) {        //so the stick is "up left"
-      dir = 'up-left';
-    } else if ( this.right(deltaX, deltaY) ) {//so the stick is "up right"
-      dir = 'up-right';
-    } else {                                  //so the stick is "up"
+  switch(this.getDir(deltaX,deltaY)) {
+    case 0:
       dir = 'up';
-    }
-  } else if ( this.down(deltaX, deltaY) ) {   //so the stick is somewhere in the lower part
-    if ( this.left(deltaX, deltaY) ) {        //so the stick is "down left"
-        dir = 'down-left';
-      } else if ( this.right(deltaX, deltaY) ) {//so the stick is "down right"
-        dir = 'down-right';
-      } else {                                  //so the stick is "down"
+      this._leftMotor = this._rightMotor = 100;
+      break;
+    case 1:
+      dir = 'up-right';
+      this._leftMotor = 100;
+      this._rightMotor = Math.round(100/3);
+      break;
+    case 2:
+      dir = 'up-r-right';
+      this._leftMotor = 100;
+      this._rightMotor = Math.round(100/8);
+      break;
+    case 3:
+      dir = 'right';
+      this._leftMotor = 100;
+      this._rightMotor = -100;
+      break;
+    case 4:
+      dir = 'down-r-right';
+      this._leftMotor = -100;
+      this._rightMotor = Math.round(-100/8);
+      break;
+    case 5:
+      dir = 'down-right';
+      this._leftMotor = -100;
+      this._rightMotor = Math.round(-100/3);
+      break;
+    case 6:
       dir = 'down';
-    }
-  } else if ( this.left(deltaX, deltaY) ) {   //so the stick is "left"
-    dir = 'left';
-  } else if ( this.right(deltaX, deltaY) ) {  //so the stick is "right"
-    dir = 'right';
-  }                                           //if nothing is fitting for the direction, this means
-                                              //either something went horribly wrong
-                                              //or the stick is in default position
+      this._leftMotor = this._rightMotor = -100;
+      break;
+    case 7:
+      dir = 'down-left';
+      this._rightMotor = -100;
+      this._leftMotor = Math.round(-100/3);
+      break;
+    case 8:
+      dir = 'down-l-left';
+      this._rightMotor = -100;
+      this._leftMotor = Math.round(-100/8);
+      break;
+    case 9:
+      dir = 'left';
+      this._rightMotor = 100;
+      this._leftMotor = -100;
+      break;
+    case 10:
+      dir = 'up-l-left';
+      this._rightMotor = 100;
+      this._leftMotor = Math.round(100/8);
+      break;
+    case 11:
+      dir = 'up-left';
+      this._rightMotor = 100;
+      this._leftMotor = Math.round(100/3);
+      break;
+    default:
+      this._rightMotor = 0;
+      this._leftMotor = 0;
+      //do Nothing because it's either the center or something went wrong
+      break;
+  }
+
+  this.updateMotorBars();
 
   if (this._direction != false) {
     this._direction.innerHTML = "Direction: " + dir;
@@ -997,9 +1399,6 @@ VirtualJoystick.prototype._calculateDirection = function() {
     var stickDistance = Math.sqrt( (deltaX * deltaX) + (deltaY * deltaY) );
     this._distance.innerHTML = "Distance: " + Math.round(stickDistance);
   }
-
-  //return dir;
-  //(<HTMLElement>document.getElementById('debug1')).innerHTML = "Direction: " + dir;
 }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -1130,7 +1529,7 @@ VirtualJoystick.prototype._buildJoystickBase	= function()
     ctx.arc( canvas.width/2, canvas.width/2, 60, 0, Math.PI*2, true);
     ctx.stroke();
 	}
-	base_image.src = 'assets/image_button_bg.png';
+	base_image.src = 'assets/joyStick_bg.svg';
 	return canvas;
 }
 
@@ -1155,7 +1554,7 @@ VirtualJoystick.prototype._buildJoystickStick	= function()
     ctx.arc( canvas.width/2, canvas.width/2, 40, 0, Math.PI*2, true);
     ctx.stroke();
   }
-  stick_image.src = 'assets/image_button.png';
+  stick_image.src = 'assets/joyStick_stick.svg';
 	return canvas;
 }
 
@@ -1226,13 +1625,13 @@ VirtualJoystick.prototype._check3D = function()
 
 /***/ }),
 
-/***/ 691:
+/***/ 698:
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(387);
+module.exports = __webpack_require__(389);
 
 
 /***/ })
 
-},[691]);
+},[698]);
 //# sourceMappingURL=main.bundle.map
