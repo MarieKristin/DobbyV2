@@ -50,12 +50,50 @@ static bool manuellerModus;
 #include "IOControl.h"
 #include "Global.h"
 
+#include <iostream>
+#include <fstream>
+
 using namespace std;
 
+#include <pthread.h>
 
 
 #define MAX_PAYLOAD 10000		 // Max Datasize der Socket-Verbindungen pro Task
 #define BACKLOG 20 			 // Maximale Verbindungen in der Warteschlage
+
+
+
+
+void *blinken(void* platzhalter){
+
+	pthread_setcancelstate (PTHREAD_CANCEL_ENABLE, NULL);
+  	pthread_setcanceltype (PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+	int pin = sensor->warning_ausloeser;
+
+	if(pin > 152 && pin < 180){pin = 25;}
+	else if(pin > 127 && pin < 151){pin = 8;}
+	else if(pin > 101 && pin < 126){pin = 7;}
+	else if(pin > 76 && pin < 100){pin = 12;}
+	else if(pin > 52 && pin < 75){pin = 16;}
+	else if(pin > 26 && pin < 51){pin = 20;}
+	else if(pin > 0 && pin < 25){pin = 21;}
+
+	while(TRUE){
+		ioControl->writePin(pin, 1);
+		ioControl->setDelay(100000);
+		ioControl->writePin(pin, 0);
+		ioControl->setDelay(100000);
+	}
+
+}
+
+
+
+pthread_t warning_blinken;
+int warningBlinkenID;
+
+
 
 //WebSocketServer
 static struct libwebsocket_context *context;
@@ -121,30 +159,27 @@ unsigned int manuelleMotorroutine(struct libwebsocket *wsi, unsigned char *data,
 	asprintf(&reply, "You typed \"%s\"", data);
 	int ausgefuehrt = 0;
 	int test = s_data.compare("STOP");
+	cout << sensor->sens_init << endl;
+	int hilf = -1;
 	if(test == 0){
-		lin->stopMotors();
+		lin->stopMode();
 		manuellerModus = false;
-		cout << "STOP_DONE!" << endl;
+//		cout << "STOP_DONE!" << endl;
 		ausgefuehrt = 1;
 	}
 
 	test = s_data.compare("sensON");
 	const char *status = "";
-	int hilf = -1;
 	if(test == 0){
-		cout << "SensOn\n";
 		if((hilf = sensor->sens_init) == 0 || (hilf = sensor->sens_init) == 1 ||(hilf = sensor->sens_init) == 2 ||(hilf = sensor->sens_init) == -1 ){
-			cout << "Hilf:" << hilf << "\n";
 			if(hilf == -1){hilf = 0;} // Zur Sicherstellung, dass korrekte Antwort gesendet wird
 			sensor->initialize();
-			cout << "nach Init\n";
 			if(sensor->sens_init == 7){
-				cout << "SENSOR ON";
 				sensor->startRoutine();
-				status = "ON";
+				//status = "ON";
 			}
 			else{
-				status = "OFF";
+				//status = "OFF";
 			}
 		}
 		ausgefuehrt = 1;
@@ -153,11 +188,12 @@ unsigned int manuelleMotorroutine(struct libwebsocket *wsi, unsigned char *data,
 	test = s_data.compare("sensOFF");
 	if(test == 0){
 		sensor->closeSensor();
+		if(hilf == -1){hilf = 0;} // Zur Sicherstellung, dass korrekte Antwort gesendet wird
 		if(sensor->sens_init != 7){
-                                status = "OFF";
+                                //status = "OFF";
                         }
                         else{
-                                status = "ON";
+                                //status = "ON";
                         }
 
 		ausgefuehrt = 1;
@@ -165,26 +201,26 @@ unsigned int manuelleMotorroutine(struct libwebsocket *wsi, unsigned char *data,
 
 	if(ausgefuehrt == 0){
 		int status = lin->interpretControlString(s_data, sensor->ausloeser);
-		cout << "Status: " << status << "\n\n";
 		if(status == 1){
 
 				if(sensor->sens_init == 7){
 
 						int rueckgabewert = sensor->startRoutine();
-							cout << "Rückgabewert: " << rueckgabewert << "\n\n";
 							if(rueckgabewert == 1){
-								cout << "drin1\n";
 								lin->startMotorsRoutine();
 								}
 							if(rueckgabewert == 2){
-								lin->startMotorsRoutine();
+								if(warningBlinkenID == 0){pthread_cancel(warning_blinken);}
+								warningBlinkenID = pthread_create (&warning_blinken, NULL, blinken, NULL);
+								logfiles -> print_log(LOG_INFO, "Thread %d", warningBlinkenID);
+								lin->WarningMode();
 								// Implements WarningModeRoutine
 								}
 							if(rueckgabewert == 3){	//StopMode
 								if(lin->velocityLeftLast != 0){
-								sensor->stopMode();}
+								lin->stopMode();}
 								}
-							if(rueckgabewert == 4){
+							if(rueckgabewert == 4){ // ggf. ab 2. STOP-Aufruf
 								lin->startMotorsRoutine();
 								goto Notausgang;
 								}
@@ -201,27 +237,32 @@ unsigned int manuelleMotorroutine(struct libwebsocket *wsi, unsigned char *data,
 						sensor->startRoutine();}
 			goto Notausgang;
 		}
-	cout << "Übertrag\n";
-	cout << "Ausloeser: " << sensor->ausloeser << "\n";
+
 	if(sensor->ausloeser == 0){
 	lin->velocityLeftLast = lin->velocityLeft;
 	lin->velocityRightLast = lin->velocityRight;
 	lin->directionLeftLast = lin->directionLeft;
 	lin->directionRightLast = lin->directionRight;}
 
-	cout << lin->velocityLeft << lin->velocityRight << "\n";
-	cout << lin->directionLeft << lin->directionRight << "\n";
 
 	}//ganz außen*/
 
 	Notausgang: cout << "Notausgang\n\n";
 
-	if(hilf == -1){
-	reply_obj = json_pack("{s:s, s:s}", "Type", "standard", "Message", reply); // Erstellung JSON-Objekt -> "Type standart", "Message REPLY"
-		}
-	else{
+if(sensor->sens_init != 7){status = "OFF";}
+else{
+
+	if(lin->warningMode == TRUE){status ="WARN";}
+	else if(sensor->ausloeser != 0){status = "STOP";}
+	else if(sensor->ausloeser == 0){status = "OK";}
+	}
+
+cout << "Status: " << status << "\n";
+
+const char* nico = "OKOK";
+cout << "\n\n" << nico << endl;
+
 	reply_obj = json_pack("{s:s, s:s, s:s}", "Type", "standard", "Message", reply, "Sensor", status);
-		}
 
 	reply_str = json_dumps(reply_obj, 0);
 	reply_len = strlen(reply_str); 						// Länge der Antwort
@@ -261,6 +302,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	if (test == 0) {
 		lin->startMotorsInit();
 		manuellerModus = true;
+		warningBlinkenID = 1;
 		hilf = sensor->getSensInit();
 		if(hilf != 7){
 			sensorHilf = "OFF";
@@ -331,7 +373,7 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 		ioControl->writePin(23, 1);
 		ioControl->writePin(25, 1);
 
-		lin->stopMotors();
+		lin->stopMode();
 
 		ioControl->writePin(25, 0);
 		ioControl->writePin(23, 0);
@@ -400,7 +442,7 @@ static int my_callback(struct libwebsocket_context *context,
 					MAX_PAYLOAD);			// Falls maximale Länge erreicht
 			return 1;
 		}
-		
+
 		if(manuellerModus == false){				//bei manuellem Modus wird Bit gesetzt -> dann nur Steuerbefehle
 		psd->len = prepare_reply(wsi, (unsigned char*) in, &psd->buf[LWS_SEND_BUFFER_PRE_PADDING]);
 				if (psd->len > 0) {
@@ -501,49 +543,48 @@ int WebSocket_initialisierung(int argc, char **argv) {
 int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argumente; argv = Pointer auf Command-Array
 	gint cnt = 0;
 
+
+	fstream myfile;
+	string line = "1";
+	myfile.open("/home/pi/Boot/release/wert.txt", ios::out);
+	myfile << "1";
+	myfile.close();
+
+	while(line == "1"){
+		myfile.open("/home/pi/Boot/release/wert.txt", ios::in);
+		myfile >> line;
+		myfile.close();
+		sleep(1);
+	}
+
+	system("/etc/init.d/boottime.sh stop");
+
 	/*************************/
 	/* Initialisierungsphase */
 	/*************************/
+
 
 	// Bibliothek um GPIOs anzusprechen
 	if (ioControl->initialize() < 0) {
 		cout << "[FAIL] PIGPIO Initialisierung fehlgeschlagen!\n";
 	}
 
-	ioControl->setToOutput(27);		// Lampe weiss
-	ioControl->setToOutput(23);		// Lampe rot
-	ioControl->setToOutput(24);		// Lampe gruen
-	ioControl->setToOutput(25);		// Lampe gelb
-
-	ioControl->writePin(25, 1);
-	ioControl->writePin(27, 1);
-	ioControl->setDelay(2000);
-	ioControl->writePin(24, 0);
-
 	WebSocket_initialisierung(argc, argv);
 	// Status für Websocket-Init wird in Funktion implementiert
 	sensor->initialize();
 	// Status für Sensor-Init wird in Funktion implementiert
-	if (sensor->getSensorRoutine() != 7) {
-		ioControl->writePin(23, 1);
-		ioControl->setDelay(2000);
-		ioControl->writePin(23, 0);
-	}
-
-	ioControl->writePin(25, 0);
-	ioControl->writePin(27, 0);
 
 	cover = false;		// Bit für Zeitmessungen
 	manuellerModus = false;
 	/*****************/
 	/* Hauptschleife */
 	/*****************/
+
+
 	while (cnt >= 0 && !exit_loop) {
 		timer t;
 		ioControl->writePin(24, 1);
-//		if (sensor->getSensorRoutine() == 7) {
-//			sensor->startRoutine();
-//		}
+
 		if(manuellerModus == false){
 			cnt = libwebsocket_service(context, 10);			// u.a. neue Verbindungen werden akzeptiert ; ggf. setzen des send_notification
 			}
@@ -555,7 +596,7 @@ int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argum
 			libwebsocket_callback_on_writable_all_protocol(&protocols[0]);
 			send_notification = FALSE;
 		}
-/*		else if(manuellerModus == true){ lin->stopMotors(); manuellerModus = false;}*/
+
 		g_main_context_iteration(NULL, FALSE);
 		t.stop();
 		if(cover == true){cout << t  << endl; cover = false;}

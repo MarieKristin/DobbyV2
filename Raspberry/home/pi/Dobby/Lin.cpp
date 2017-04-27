@@ -48,21 +48,6 @@ void Lin::getFrame() {
 	activationFrame.getFrame();
 }
 
-void Lin::stopMotors() {
-	if (ioControl->getHandle() < 0) {
-		ioControl->openSerial();
-	}
-	messageFrame.setContent(0x3C, 0x84, 0xAA, 0x00, 0x55, 0xA5, 0xAA, 0x00, 0xFF);
-	sendWakeUp();
-	ioControl->setSleep(310000);
-	sendInitFrame();
-	ioControl->setSleep(50000);
-	sendActivationFrame();
-	ioControl->setSleep(50000);
-	sendMessageFrame();
-	ioControl->setSleep(50000);
-	ioControl->setDelay(2000);
-}
 
 void Lin::circleRegulation(){
 	cout << "CIrcleCirculation" << endl;
@@ -104,11 +89,10 @@ int Lin::interpretControlString(std::string inputString, int status){
                 puffer  >> std::hex >> velocityLeft;
                 puffer.str("");
                 puffer.clear();
-
 		puffer  << (inputString.substr(0,2));
-		puffer >> std::hex >> help; 
-		cout << "InterpretString Help: " << help << "\n";
-		cout << "InterpretString LastLeft: " << directionLeftLast << "\n";
+		puffer >> std::hex >> help;
+//		cout << "InterpretString Help: " << help << "\n";
+//		cout << "InterpretString LastLeft: " << directionLeftLast << "\n";
 		if( status == 0 || (status != 0 && (help != directionLeftLast))){
 				 directionLeft = help;
 					}
@@ -124,15 +108,11 @@ int Lin::interpretControlString(std::string inputString, int status){
 		puffer.str("");
 		puffer.clear();
 
-		/*puffer  << (inputString.substr(3,2));
-		puffer  >> std::hex >> velocityLeft;
-		puffer.str("");
-		puffer.clear();*/
 
 		puffer  << (inputString.substr(6,2));
 		puffer >> std::hex >> help;
-		cout << "InterpretString Help: " << help << "\n";
-                cout << "InterpretString LastRight: " << directionRightLast << "\n";
+//		cout << "InterpretString Help: " << help << "\n";
+//              cout << "InterpretString LastRight: " << directionRightLast << "\n";
 		if( status == 0 || (status != 0 && (help != directionRightLast))){
 				directionRight = help;
 
@@ -146,7 +126,6 @@ int Lin::interpretControlString(std::string inputString, int status){
 		puffer  << (inputString.substr(9,2));
 		puffer  >> std::hex >> velocityRight;
 		return 1;
-//		cout << "DirectLeft:" << directionLeft << " VeloLeft:"<< velocityLeft << " DirectRight: " << directionRight << " VeloRight: " << velocityRight << "\n\n";
 }
 
 
@@ -179,9 +158,7 @@ void Lin::startMotorsInit(){
 }
 
 void Lin::startMotorsRoutine(){
-	cout << "startMotorsRountine" << endl;
-	messageFrame.setContent(0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5,
-		directionRight, velocityRight, 0xFF);
+	messageFrame.setContent(0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5, directionRight, velocityRight, 0xFF);
 	sendMessageFrame();
 }
 
@@ -252,44 +229,113 @@ void Lin::sendMessageFrame() {
 	}
 }
 
+void Lin::stopMode(){
+	messageFrame.setContent(0x3C, 0x84, directionLeftLast, 0x00, 0x55, 0xA5, directionRightLast, 0x00, 0xFF);
+        sendMessageFrame();
+}
+
+
 void Lin::WarningMode() {
 
+	cout << "SensorWarningLevel" << endl;
+	cout << warningMode << "\n";
+	cout << "VelocityLeft: " << velocityLeft << endl;
+	cout << "VelocityLeftLast: " << velocityLeftLast << endl;
+	cout << "DirectionLeft: " << directionLeft << endl;
+	cout << "VelocityRight: " << velocityRight << endl;
+	cout << "VelocityRightLast: " << velocityRightLast << endl;
+	cout << "DirectionRight: " << directionRight << endl;
 
 
-/*	cout << "SensorWarningLevel" << endl;
-	if(velocityLeft > velocityRight){
-		int verhaeltnis = velocityLeft / velocityRight;
-		while(velocityLeft > 27){
-				velocityLeft = velocityLeft - 9;
-                                velocityRight = velocityLeft/verhaeltnis;
-                                messageFrame.setContent(0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5,
-                                                        directionRight, velocityRight, 0xFF);
-                                sendMessageFrame();
-                                }
-
-
-	}
-	else{
-		if(velocityLeft < velocityRight){
-				int verhaeltnis = velocityRight / velocityLeft;
-		                while(velocityRightLast > 27){
-                	                velocityRight = velocityRight - 9;
-                        	        velocityLeft = velocityRight/verhaeltnis;
-                                	messageFrame.setContent(0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5,
-                                                        directionRight, velocityRight, 0xFF);
-                                	sendMessageFrame();
-                                }
-
+if((velocityLeftLast <= 27 || velocityRightLast <= 27) && gedrosselt == true){
+	if(velocityLeft > 0 && velocityRight > 0){
+			cout << "drossel";
+			if(antriebsverhaeltnis != (velocityLeft/velocityRight)){
+						cout << "drosssel1" << endl;
+						goto neuerSchritt;
 			}
-		else{
-			while(velocityLeft <= 27){
-				velocityLeft = velocityLeft - 9;
-				velocityRight = velocityRight - 9;
-				messageFrame.setContent(0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5,
-							directionRight, velocityRight, 0xFF);
-				sendMessageFrame();
+			else if(velocityLeft < velocityLeftLast){
+						cout << "drosssel2" << endl;
+				messageFrame.setContent(0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5, directionRight, velocityRight, 0xFF);
+                                sendMessageFrame();
+			}
+			else if(velocityRight < velocityRightLast){
+						cout << "drosssel3" << endl;
+				messageFrame.setContent(0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5, directionRight, velocityRight, 0xFF);
+                                sendMessageFrame();
+			}
+			else{
+			cout << "drosssel4" << endl;
+			velocityLeft = velocityLeftLast;
+			velocityRight = velocityRightLast;
+			}
+		}
+	else{			messageFrame.setContent(0x3C, 0x84, directionLeft, 0x00, 0x55, 0xA5, directionRight, 0x00, 0xFF);
+                                sendMessageFrame();
+		
+		}
+	}
+else{	neuerSchritt:
+	if(velocityLeft > 27 || velocityRight > 27){
+			cout << "ROutine 1\n";
+
+			if(velocityLeft > velocityRight){
+				antriebsverhaeltnis = velocityLeft / velocityRight;
+				cout << "Option 1\n";
+				while(velocityLeft > 27){
+						velocityLeft = velocityLeft - 9;
+                                		velocityRight = velocityLeft/antriebsverhaeltnis;
+                                		messageFrame.setContent(0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5,
+                                                		        directionRight, velocityRight, 0xFF);
+                                		sendMessageFrame();
+                                		}
+				gedrosselt = true;
+			}
+			else{
+				if(velocityLeft < velocityRight){
+						cout << "Option 2\n";
+						antriebsverhaeltnis = velocityRight / velocityLeft;
+		                		while(velocityRight > 27){
+                	                		velocityRight = velocityRight - 9;
+                        	        		velocityLeft = velocityRight/antriebsverhaeltnis;
+                               				messageFrame.setContent(0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5,
+                                                       		directionRight, velocityRight, 0xFF);
+                         				sendMessageFrame();
+                                		}
+					gedrosselt = true;
+					}
+				else{
+					antriebsverhaeltnis = 1;
+					while(velocityLeft > 27){
+						cout << "Option 3\n";
+						velocityLeft = velocityLeft - 9;
+						velocityRight = velocityRight - 9;
+						messageFrame.setContent(0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5,
+									directionRight, velocityRight, 0xFF);
+						sendMessageFrame();
+						}
+					gedrosselt = true;
+					}
+
 				}
 			}
+	else{
+			cout << "Routine 2\n";
+			 messageFrame.setContent(0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5,
+                                      		               directionRight, velocityRight, 0xFF);
+                             		 sendMessageFrame();
 
-		}*/
+			}
+
+	
+
+}
+
+        cout << "VelocityLeft: " << velocityLeft << endl;
+        cout << "VelocityLeftLast: " << velocityLeftLast << endl;
+        cout << "DirectionLeft: " << directionLeft << endl;
+        cout << "VelocityRight: " << velocityRight << endl;
+        cout << "VelocityRightLast: " << velocityRightLast << endl;
+        cout << "DirectionRight: " << directionRight << endl;
+
 }

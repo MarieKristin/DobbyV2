@@ -24,10 +24,9 @@ public:
 	void getFrame();
 	void startMotorsInit();
 	void startMotorsRoutine();
-	void stopMotors();
 	int interpretControlString(std::string inputString, int ausloeser);
 	void WarningMode();
-
+	void stopMode();
 	int directionLeft;
 	int velocityLeft;
 	int directionRight;
@@ -38,9 +37,9 @@ public:
 	int directionRightLast;
 	int velocityRightLast;
 	bool warningMode;
-
+	bool gedrosselt;
 private:
-
+	int antriebsverhaeltnis;
 	IOControl *ioControl;
 	LogFiles *logfiles;
 	static int BAUDRATE;

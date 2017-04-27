@@ -50,6 +50,7 @@ int Sensor::getSensInit(){
 void Sensor::closeSensor(){
 	int i = close(sockfd);
 	ausloeser = 0;
+	lin->gedrosselt = false;
 	if(i == 0){setSensorRoutine(0);}
 }
 
@@ -265,8 +266,9 @@ int Sensor::startRoutine() {
 		i++;
 		l = 0;
 	}
-	cout << "Aktuelle Entfernung: " << aktuelle_entfernung << "\n" ;
-	cout << "Aktueller Ausloeser: " << aktueller_ausloeser << "\n";
+//	cout << "Aktuelle Entfernung: " << aktuelle_entfernung << "\n" ;
+//	cout << "Aktueller Ausloeser: " << aktueller_ausloeser << "\n";
+	lin->warningMode = false;
 	if(aktuelle_entfernung < 500){
 		if(aktuelle_entfernung < 230){
 				if(ausloeser == 0){
@@ -280,14 +282,15 @@ int Sensor::startRoutine() {
 					}
 
 				}}
-			else{
-		//			lin->WarningMode();
+			else{		warning_ausloeser = aktueller_ausloeser;
 					ausloeser = 0;
+					lin->warningMode = true;
 					return 2;
 					}
 		}
 	else{
 		if(ausloeser != 0){ausloeser = 0;}
+		if(lin->gedrosselt != false){lin->gedrosselt = false;}
 		return 1;
 		}
 
@@ -296,10 +299,3 @@ int Sensor::startRoutine() {
 
 
 
-void Sensor::stopMode(){
-
-	if(lin->velocityLeftLast != 0 && lin->velocityRightLast != 0){
-			lin->startMotorsInit();
-		}
-
-} 
