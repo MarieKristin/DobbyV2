@@ -50,6 +50,7 @@ int Sensor::getSensInit(){
 void Sensor::closeSensor(){
 	int i = close(sockfd);
 	ausloeser = 0;
+	lin->gedrosselt = false;
 	if(i == 0){setSensorRoutine(0);}
 }
 
@@ -134,15 +135,13 @@ int Sensor::initialize() {
 		printf("client: connecting to %s\n", s);
 	}
 	freeaddrinfo(servinfo);
-	ioControl->writePin(24, 1);
-	ioControl->setDelay(2000);
-	ioControl->writePin(24, 0);
 	setSensorRoutine(7);
 	logfiles->print_log(LOG_ERR, "SensorInit erfolgreich abgeschlossen");
 	return getSensorRoutine();
 }
 
 int Sensor::startRoutine() {
+	logfiles->print_log(LOG_ERR, "SensorRoutine Start");
 	string msg = "\x02sRN LMDscandata\x03\0";
 	int len = msg.size();
 	int numbytes = 0;
@@ -153,6 +152,7 @@ int Sensor::startRoutine() {
 //		printf("%s gesendet, %d Bytes\n", msg.data(), sent);
 	}
 	if (sent == -1) {
+		logfiles->print_log(LOG_ERR, "Werte-Befehl senden fehlgeschlagen\n");
 		printf("Senden fehlgeschlagen\n");
 	}
 
@@ -265,29 +265,39 @@ int Sensor::startRoutine() {
 		i++;
 		l = 0;
 	}
-	cout << "Aktuelle Entfernung: " << aktuelle_entfernung << "\n" ;
-	cout << "Aktueller Ausloeser: " << aktueller_ausloeser << "\n";
+//	cout << "Aktuelle Entfernung: " << aktuelle_entfernung << "\n" ;
+//	cout << "Aktueller Ausloeser: " << aktueller_ausloeser << "\n";
+	lin->warningMode = false;
 	if(aktuelle_entfernung < 500){
 		if(aktuelle_entfernung < 230){
 				if(ausloeser == 0){
 					ausloeser = aktueller_ausloeser;
 					ausloeser_entfernung = aktuelle_entfernung;
+					logfiles->print_log(LOG_ERR, "SensorRoutine - STOP1 Auslöser: %d", ausloeser);
 					return 3;}
 				else{
 					if(aktueller_ausloeser >= ausloeser-15 && aktueller_ausloeser <= ausloeser + 15 ){
-						if(aktuelle_entfernung > ausloeser_entfernung){return 4;}
-						else{return 3;}
+						if(aktuelle_entfernung > ausloeser_entfernung){
+									logfiles->print_log(LOG_ERR, "SensorRoutine - STOP2 Auslöser: %d", ausloeser);
+									return 4;}
+						else{
+							logfiles->print_log(LOG_ERR, "SensorRoutine - STOP1 Auslöser: %d", ausloeser);
+							return 3;}
 					}
 
 				}}
-			else{
-		//			lin->WarningMode();
+			else{		warning_ausloeser_alt = warning_ausloeser;
+					warning_ausloeser = aktueller_ausloeser;
 					ausloeser = 0;
+					lin->warningMode = true;
+					logfiles->print_log(LOG_ERR, "SensorRoutine - WARN Auslöser: %d", warning_ausloeser);
 					return 2;
 					}
 		}
 	else{
-		if(ausloeser != 0){ausloeser = 0;}
+		if(ausloeser != 0){ausloeser = 0; warning_ausloeser_alt = 0; warning_ausloeser = 0;}
+		if(lin->gedrosselt != false){lin->gedrosselt = false;}
+		logfiles->print_log(LOG_ERR, "SensorRoutine - OK");
 		return 1;
 		}
 
@@ -296,10 +306,3 @@ int Sensor::startRoutine() {
 
 
 
-void Sensor::stopMode(){
-
-	if(lin->velocityLeftLast != 0 && lin->velocityRightLast != 0){
-			lin->startMotorsInit();
-		}
-
-} 

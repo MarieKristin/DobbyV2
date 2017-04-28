@@ -18,8 +18,7 @@
 
 #include "LogFiles.h"
 #include "Timer.h"
-static bool cover;
-static bool manuellerModus;
+
 //Bibliothek für Socket-Verbindung zwischen Raspberry und Handy
 #include <gio/gio.h>
 #include <glib-unix.h> 			// Commandline-Bibliothek
@@ -30,6 +29,7 @@ static bool manuellerModus;
 #include <jansson.h>
 #include <libwebsockets.h>
 #include <iostream>
+#include <fstream>
 
 //Bibliotheken für Sensor
 #include <stdlib.h>
@@ -50,12 +50,83 @@ static bool manuellerModus;
 #include "IOControl.h"
 #include "Global.h"
 
+#include <pthread.h>
+
 using namespace std;
-
-
 
 #define MAX_PAYLOAD 10000		 // Max Datasize der Socket-Verbindungen pro Task
 #define BACKLOG 20 			 // Maximale Verbindungen in der Warteschlage
+
+static bool cover;
+static bool manuellerModus;
+int pin;
+
+pthread_t warning_blinken_21;
+pthread_t warning_blinken_20;
+pthread_t warning_blinken_16;
+pthread_t warning_blinken_12;
+pthread_t warning_blinken_7;
+pthread_t warning_blinken_8;
+pthread_t warning_blinken_25;
+pthread_t init_blinken;
+int warningBlinkenID_21;
+int warningBlinkenID_20;
+int warningBlinkenID_16;
+int warningBlinkenID_12;
+int warningBlinkenID_7;
+int warningBlinkenID_8;
+int warningBlinkenID_25;
+
+
+void *blinken(void* platzhalter){
+
+	while(TRUE){
+		ioControl->writePin((int)platzhalter, 0);
+		ioControl->writePin((int)platzhalter, 1);
+		ioControl->setDelay(100000);
+		ioControl->writePin((int)platzhalter, 0);
+		ioControl->setDelay(100000);
+	}
+
+}
+
+void blinken_beenden(){
+	logfiles->print_log(LOG_INFO, "blinken_beenden %d START",pin);
+
+	if(warningBlinkenID_21 == 0){pthread_cancel(warning_blinken_21);
+					ioControl->writePin(21, 0);
+					warningBlinkenID_21 = -1;
+					}
+	if(warningBlinkenID_20 == 0){pthread_cancel(warning_blinken_20);
+					ioControl->writePin(20, 0);
+					warningBlinkenID_20 = -1;
+                                        }
+	if(warningBlinkenID_16 == 0){pthread_cancel(warning_blinken_16);
+                                        ioControl->writePin(16, 0);
+					warningBlinkenID_16 = -1;
+					}
+	if(warningBlinkenID_12 == 0){pthread_cancel(warning_blinken_12);
+                                        ioControl->writePin(12, 0);
+					warningBlinkenID_12 = -1;
+					}
+	if(warningBlinkenID_7 == 0){pthread_cancel(warning_blinken_7);
+                                        ioControl->writePin(7, 0);
+					warningBlinkenID_7 = -1;
+					}
+	if(warningBlinkenID_8 == 0){pthread_cancel(warning_blinken_8);
+					ioControl->writePin(8, 0);
+					warningBlinkenID_8 = -1;
+                                        }
+	if(warningBlinkenID_25 == 0){pthread_cancel(warning_blinken_25);
+                                        ioControl->writePin(25, 0);
+					warningBlinkenID_25 = -1;
+					}
+
+	pin = -1;
+	logfiles->print_log(LOG_INFO, "blinken_beenden %d BEENDET",pin);	
+
+}
+
 
 //WebSocketServer
 static struct libwebsocket_context *context;
@@ -68,6 +139,7 @@ int signal_id = 0;
 GOptionContext *option_context = NULL;
 gint exit_value = EXIT_SUCCESS;
 struct termios options;
+int anzahlVerbindungen;
 
 /* ***************************************** */
 /* ***************************************** */
@@ -102,7 +174,7 @@ struct per_session_data {
 };
 
 /* ***************************************** */
-/* Interrupt durch Tastatur ausgel�st 	     */
+/* Interrupt durch Tastatur ausgel�st 	     */
 /* ***************************************** */
 static gboolean sigint_handler() {
 	libwebsocket_cancel_service(context); 							// Beende Service
@@ -119,32 +191,32 @@ unsigned int manuelleMotorroutine(struct libwebsocket *wsi, unsigned char *data,
 	char *reply;
 	int reply_len;
 	asprintf(&reply, "You typed \"%s\"", data);
+	logfiles->print_log(LOG_INFO, "Manuelle Motorroutine %s",data);
 	int ausgefuehrt = 0;
 	int test = s_data.compare("STOP");
+	int hilf = -1;
 	if(test == 0){
-		lin->stopMotors();
+		
+		ioControl->writePin(3, 0);
+		lin->stopMode();
 		manuellerModus = false;
-		cout << "STOP_DONE!" << endl;
+//		cout << "STOP_DONE!" << endl;
 		ausgefuehrt = 1;
 	}
 
 	test = s_data.compare("sensON");
 	const char *status = "";
-	int hilf = -1;
 	if(test == 0){
-		cout << "SensOn\n";
 		if((hilf = sensor->sens_init) == 0 || (hilf = sensor->sens_init) == 1 ||(hilf = sensor->sens_init) == 2 ||(hilf = sensor->sens_init) == -1 ){
-			cout << "Hilf:" << hilf << "\n";
 			if(hilf == -1){hilf = 0;} // Zur Sicherstellung, dass korrekte Antwort gesendet wird
 			sensor->initialize();
-			cout << "nach Init\n";
 			if(sensor->sens_init == 7){
-				cout << "SENSOR ON";
+				ioControl->writePin(2, 1);
 				sensor->startRoutine();
-				status = "ON";
+				//status = "ON";
 			}
 			else{
-				status = "OFF";
+				//status = "OFF";
 			}
 		}
 		ausgefuehrt = 1;
@@ -153,11 +225,12 @@ unsigned int manuelleMotorroutine(struct libwebsocket *wsi, unsigned char *data,
 	test = s_data.compare("sensOFF");
 	if(test == 0){
 		sensor->closeSensor();
+		if(hilf == -1){hilf = 0;} // Zur Sicherstellung, dass korrekte Antwort gesendet wird
 		if(sensor->sens_init != 7){
-                                status = "OFF";
+                             ioControl->writePin(2, 0);   //status = "OFF";
                         }
                         else{
-                                status = "ON";
+                                //status = "ON";
                         }
 
 		ausgefuehrt = 1;
@@ -165,26 +238,73 @@ unsigned int manuelleMotorroutine(struct libwebsocket *wsi, unsigned char *data,
 
 	if(ausgefuehrt == 0){
 		int status = lin->interpretControlString(s_data, sensor->ausloeser);
-		cout << "Status: " << status << "\n\n";
 		if(status == 1){
 
 				if(sensor->sens_init == 7){
 
 						int rueckgabewert = sensor->startRoutine();
-							cout << "Rückgabewert: " << rueckgabewert << "\n\n";
 							if(rueckgabewert == 1){
-								cout << "drin1\n";
+								if(pin != -1){blinken_beenden();}
 								lin->startMotorsRoutine();
 								}
 							if(rueckgabewert == 2){
-								lin->startMotorsRoutine();
+								int ausloeser = sensor->warning_ausloeser;
+							        if(pin != -1){blinken_beenden();}
+								if(ausloeser > 152 && ausloeser < 180){
+										if(warningBlinkenID_25 == 0){pthread_cancel(warning_blinken_25);} pin = 25;
+                                                                                warningBlinkenID_25 = pthread_create (&warning_blinken_25, NULL, blinken, (void*)25);}
+								 else if(ausloeser > 127 && ausloeser < 151){
+										if(warningBlinkenID_8 == 0){pthread_cancel(warning_blinken_8);} pin = 8;
+										 warningBlinkenID_8 = pthread_create (&warning_blinken_8, NULL, blinken, (void*)8);}
+        							 else if(ausloeser> 101 && ausloeser < 126){
+										if(warningBlinkenID_7 == 0){pthread_cancel(warning_blinken_7);} pin = 7;
+                                                                                 warningBlinkenID_7 = pthread_create (&warning_blinken_7, NULL, blinken, (void*)7);}
+        							 else if(ausloeser > 76 && ausloeser < 100){
+										if(warningBlinkenID_12 == 0){pthread_cancel(warning_blinken_12);} pin = 12;
+                                                                                 warningBlinkenID_12 = pthread_create (&warning_blinken_12, NULL, blinken, (void*)12);}
+        							 else if(ausloeser > 52 && ausloeser < 75){
+										if(warningBlinkenID_16 == 0){pthread_cancel(warning_blinken_16);} pin = 16;
+                                                                                 warningBlinkenID_16 = pthread_create (&warning_blinken_16, NULL, blinken, (void*)16);}
+        							 else if(ausloeser > 26 && ausloeser < 51){
+										if(warningBlinkenID_20 == 0){pthread_cancel(warning_blinken_20);} pin = 20;
+                                                                                 warningBlinkenID_20 = pthread_create (&warning_blinken_20, NULL, blinken, (void*)20);}
+        							 else if(ausloeser > 0 && ausloeser < 25){
+										if(warningBlinkenID_21 == 0){pthread_cancel(warning_blinken_21);} pin = 21;
+                                                                                 warningBlinkenID_21 = pthread_create (&warning_blinken_21, NULL, blinken, (void*)21);}
+
+								// ueberspringen:
+								lin->WarningMode();
 								// Implements WarningModeRoutine
 								}
 							if(rueckgabewert == 3){	//StopMode
+								if(pin != -1){blinken_beenden();}
+
+								ioControl->alleGPIOSAusschalten();
+                                                                int ausloeser = sensor->ausloeser;
+                                                                logfiles->print_log(LOG_INFO, "Ausloeser %d", ausloeser);
+                                                                if(ausloeser > 152 && ausloeser < 180){ ioControl->writePin(25, 1);}
+                                                                 else if(ausloeser > 127 && ausloeser < 151){ ioControl->writePin(8, 1);}
+                                                                 else if(ausloeser> 101 && ausloeser < 126){ ioControl->writePin(7, 1);}
+                                                                 else if(ausloeser > 76 && ausloeser < 100){ ioControl->writePin(12, 1);}
+                                                                 else if(ausloeser > 52 && ausloeser < 75){ ioControl->writePin(16, 1);}
+                                                                 else if(ausloeser > 26 && ausloeser < 51){ ioControl->writePin(20, 1);}
+                                                                 else if(ausloeser > 0 && ausloeser < 25){ ioControl->writePin(21, 1);}
+
 								if(lin->velocityLeftLast != 0){
-								sensor->stopMode();}
+								lin->stopMode();}
 								}
-							if(rueckgabewert == 4){
+							if(rueckgabewert == 4){ // ggf. ab 2. STOP-Aufruf
+								if(pin!= -1){blinken_beenden();}
+								ioControl->alleGPIOSAusschalten();
+                                                                int ausloeser = sensor->ausloeser;
+                                                                if(ausloeser > 152 && ausloeser < 180){ ioControl->writePin(25, 1);}
+                                                                 else if(ausloeser > 127 && ausloeser < 151){ ioControl->writePin(8, 1);}
+                                                                 else if(ausloeser> 101 && ausloeser < 126){ ioControl->writePin(7, 1);}
+                                                                 else if(ausloeser > 76 && ausloeser < 100){ ioControl->writePin(12, 1);}
+                                                                 else if(ausloeser > 52 && ausloeser < 75){ ioControl->writePin(16, 1);}
+                                                                 else if(ausloeser > 26 && ausloeser < 51){ ioControl->writePin(20, 1);}
+                                                                 else if(ausloeser > 0 && ausloeser < 25){ ioControl->writePin(21, 1);}
+
 								lin->startMotorsRoutine();
 								goto Notausgang;
 								}
@@ -201,27 +321,30 @@ unsigned int manuelleMotorroutine(struct libwebsocket *wsi, unsigned char *data,
 						sensor->startRoutine();}
 			goto Notausgang;
 		}
-	cout << "Übertrag\n";
-	cout << "Ausloeser: " << sensor->ausloeser << "\n";
+
 	if(sensor->ausloeser == 0){
 	lin->velocityLeftLast = lin->velocityLeft;
 	lin->velocityRightLast = lin->velocityRight;
 	lin->directionLeftLast = lin->directionLeft;
 	lin->directionRightLast = lin->directionRight;}
 
-	cout << lin->velocityLeft << lin->velocityRight << "\n";
-	cout << lin->directionLeft << lin->directionRight << "\n";
 
 	}//ganz außen*/
 
 	Notausgang: cout << "Notausgang\n\n";
 
-	if(hilf == -1){
-	reply_obj = json_pack("{s:s, s:s}", "Type", "standard", "Message", reply); // Erstellung JSON-Objekt -> "Type standart", "Message REPLY"
-		}
-	else{
+if(sensor->sens_init != 7){status = "OFF";}
+else{
+
+	if(lin->warningMode == TRUE){status ="WARN";}
+	else if(sensor->ausloeser != 0){status = "STOP";}
+	else if(sensor->ausloeser == 0){status = "OK";}
+	}
+
+cout << "Status: " << status << "\n";
+
+
 	reply_obj = json_pack("{s:s, s:s, s:s}", "Type", "standard", "Message", reply, "Sensor", status);
-		}
 
 	reply_str = json_dumps(reply_obj, 0);
 	reply_len = strlen(reply_str); 						// Länge der Antwort
@@ -252,15 +375,16 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	int reply_len;
 	int ausgefuehrt = 0;
 	int hilf = -1;
-
 	asprintf(&reply, "You typed \"%s\"", data);				// Füge zu den eigegebenen Daten "you typed" hinzu und schreibe in reply
-
+	logfiles->print_log(LOG_INFO, "Allgemeine Routine %s",data);
 	string manuell = "manuell";
 	int test = s_data.compare(manuell); 					// Vergleiche ob das eigegebene Wort dem Wert von "lampe" entspricht
 	const char* sensorHilf;
 	if (test == 0) {
+		ioControl->writePin(3, 1);
 		lin->startMotorsInit();
 		manuellerModus = true;
+		pin = -1;
 		hilf = sensor->getSensInit();
 		if(hilf != 7){
 			sensorHilf = "OFF";
@@ -274,68 +398,38 @@ unsigned int prepare_reply(struct libwebsocket *wsi, unsigned char *data,
 	string automatik = "automatik";							// == 0 ? -> ist gleich
 	test = s_data.compare(automatik);
 	if (test == 0) {
+		pthread_create (&init_blinken, NULL, blinken, (void*)3);
 		system("/etc/init.d/livestream.sh start &");
-		ioControl->blinken(27, 200);
 	}
 	test = 7;
 
 	string manuStop = "STOP";
 	test = s_data.compare(manuStop);
 	if (test == 0) {
+		pthread_cancel(init_blinken);
 		system("/etc/init.d/livestream.sh stop &");
-		ioControl->blinken(23, 200);
 	}
 	test = 7;
 
 	string sensInit = "SensInit";
 	test = s_data.compare(sensInit);
 	if (test == 0) {
-		ioControl->writePin(24, 0);
-		ioControl->writePin(27, 1);
-		ioControl->writePin(25, 1);
 		sensor->initialize();
-		if (sensor->getSensorRoutine() != 7) {
-			ioControl->writePin(23, 1);
-			ioControl->setDelay(2000);
-			ioControl->writePin(23, 0);
-		}
-		ioControl->writePin(25, 0);
-		ioControl->writePin(27, 0);
+		if(sensor->getSensorRoutine() == 7){
+				ioControl->writePin(2, 1);
+		}	
 	}
 	test = 7;
 	string sensOut = "SensOff";
 	test = s_data.compare(sensOut);
 	if (test == 0) {
-		ioControl->writePin(23, 1);
-
 		sensor->closeSensor();
-
-		ioControl->setDelay(2000);
-		ioControl->writePin(23, 0);
-	}
-	string motorOn = "MotorOn";
-	test = s_data.compare(motorOn);
-	if (test == 0) {
-		ioControl->writePin(23, 1);
-		ioControl->writePin(25, 1);
-
-		lin->startMotorsRoutine();
-
-		ioControl->writePin(25, 0);
-		ioControl->writePin(23, 0);
-	}
-
-	string motorOff = "MotorOff";
-	test = s_data.compare(motorOff);
-	if (test == 0) {
-		ioControl->writePin(23, 1);
-		ioControl->writePin(25, 1);
-
-		lin->stopMotors();
-
-		ioControl->writePin(25, 0);
-		ioControl->writePin(23, 0);
-	}
+			if(sensor->getSensorRoutine() == 0){
+					ioControl->writePin(2,0);
+				}
+			}
+		
+	
 	cover = true;
 
 	if(hilf == -1 ){
@@ -366,10 +460,14 @@ static int my_callback(struct libwebsocket_context *context,
 	switch (reason) {
 
 	case LWS_CALLBACK_ESTABLISHED:			// Eintrag sys-LogFile (/var/log/syslog)
+		ioControl->writePin(18, 1);
+		anzahlVerbindungen++;
 		logfiles->print_log(LOG_INFO, "(%p) (callback) connection established\n", wsi);
 		break;
 
 	case LWS_CALLBACK_CLOSED:			// Eintrag sys-LogFile (/var/log/syslog)
+		anzahlVerbindungen--;
+		if(anzahlVerbindungen == 0){ioControl->writePin(18, 0);}
 		logfiles->print_log(LOG_INFO, "(%p) (callback) connection closed\n", wsi);
 		break;
 
@@ -400,7 +498,7 @@ static int my_callback(struct libwebsocket_context *context,
 					MAX_PAYLOAD);			// Falls maximale Länge erreicht
 			return 1;
 		}
-		
+
 		if(manuellerModus == false){				//bei manuellem Modus wird Bit gesetzt -> dann nur Steuerbefehle
 		psd->len = prepare_reply(wsi, (unsigned char*) in, &psd->buf[LWS_SEND_BUFFER_PRE_PADDING]);
 				if (psd->len > 0) {
@@ -433,7 +531,6 @@ static struct libwebsocket_protocols protocols[] = { { "my_protocol", 		// Proto
 /* Initialisierung WebSocket 		     */
 /* ***************************************** */
 int WebSocket_initialisierung(int argc, char **argv) {
-
 	GError *error = NULL;
 	gint signal_id = 0;
 	struct lws_context_creation_info info;
@@ -488,9 +585,6 @@ int WebSocket_initialisierung(int argc, char **argv) {
 	}
 	logfiles->print_log(LOG_INFO, "(main) context - %p\n", context);
 
-	ioControl->writePin(24, 1);
-	ioControl->setDelay(2000);
-	ioControl->writePin(24, 0);
 }
 
 /* ***************************************** */
@@ -499,51 +593,54 @@ int WebSocket_initialisierung(int argc, char **argv) {
 /* ***************************************** */
 /* ***************************************** */
 int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argumente; argv = Pointer auf Command-Array
+	logfiles->print_log(LOG_INFO, "Dobby-Programm Start");
 	gint cnt = 0;
+	anzahlVerbindungen = 0;
+
+	fstream myfile;
+	string line = "1";
+	myfile.open("/home/pi/Boot/release/wert.txt", ios::out);
+	myfile << "1";
+	myfile.close();
+
+	while(line == "1"){
+		myfile.open("/home/pi/Boot/release/wert.txt", ios::in);
+		myfile >> line;
+		myfile.close();
+		sleep(1);
+	}
+
+	system("/etc/init.d/boottime.sh stop");
 
 	/*************************/
 	/* Initialisierungsphase */
 	/*************************/
+
 
 	// Bibliothek um GPIOs anzusprechen
 	if (ioControl->initialize() < 0) {
 		cout << "[FAIL] PIGPIO Initialisierung fehlgeschlagen!\n";
 	}
 
-	ioControl->setToOutput(27);		// Lampe weiss
-	ioControl->setToOutput(23);		// Lampe rot
-	ioControl->setToOutput(24);		// Lampe gruen
-	ioControl->setToOutput(25);		// Lampe gelb
-
-	ioControl->writePin(25, 1);
-	ioControl->writePin(27, 1);
-	ioControl->setDelay(2000);
-	ioControl->writePin(24, 0);
-
+	pthread_create (&init_blinken, NULL, blinken, (void*)23);
 	WebSocket_initialisierung(argc, argv);
 	// Status für Websocket-Init wird in Funktion implementiert
 	sensor->initialize();
+	if(sensor->sens_init == 7){ioControl->writePin(2, 1);}
 	// Status für Sensor-Init wird in Funktion implementiert
-	if (sensor->getSensorRoutine() != 7) {
-		ioControl->writePin(23, 1);
-		ioControl->setDelay(2000);
-		ioControl->writePin(23, 0);
-	}
-
-	ioControl->writePin(25, 0);
-	ioControl->writePin(27, 0);
 
 	cover = false;		// Bit für Zeitmessungen
 	manuellerModus = false;
 	/*****************/
 	/* Hauptschleife */
 	/*****************/
+	pthread_cancel(init_blinken);
+	ioControl->writePin(24, 1);
+    ioControl->writePin(23, 1);
+	logfiles->print_log(LOG_INFO, "Main-Schleife Start");
 	while (cnt >= 0 && !exit_loop) {
 		timer t;
-		ioControl->writePin(24, 1);
-//		if (sensor->getSensorRoutine() == 7) {
-//			sensor->startRoutine();
-//		}
+		
 		if(manuellerModus == false){
 			cnt = libwebsocket_service(context, 10);			// u.a. neue Verbindungen werden akzeptiert ; ggf. setzen des send_notification
 			}
@@ -555,7 +652,7 @@ int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argum
 			libwebsocket_callback_on_writable_all_protocol(&protocols[0]);
 			send_notification = FALSE;
 		}
-/*		else if(manuellerModus == true){ lin->stopMotors(); manuellerModus = false;}*/
+
 		g_main_context_iteration(NULL, FALSE);
 		t.stop();
 		if(cover == true){cout << t  << endl; cover = false;}
@@ -571,7 +668,7 @@ int main(int argc, char **argv) { // argc = Pointer auf Anzahl der Command-Argum
 	sensor->closeSensor();								// Close Sensor-Socket
 #ifndef HAVE_SYSTEMD
 	closelog();
-#endif
+#endif		
 
 	return exit_value;
 }

@@ -25,6 +25,7 @@ public:
 	unsigned int blinken(int lampe, int geschwindigkeit);
 	void setHandle(int value);
 	int getHandle();
+	void alleGPIOSAusschalten();
 
 private:
         LogFiles *logfiles;

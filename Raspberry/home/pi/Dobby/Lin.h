@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <Frame.h>
+#include "LogFiles.h"
 enum FrameType
 {
 	init, activation, message	//0, 1, 2
@@ -10,6 +11,8 @@ class IOControl;
 class Frame;
 class LogFiles;
 class Lin
+
+
 {
 public:
 	Lin();
@@ -24,10 +27,9 @@ public:
 	void getFrame();
 	void startMotorsInit();
 	void startMotorsRoutine();
-	void stopMotors();
 	int interpretControlString(std::string inputString, int ausloeser);
 	void WarningMode();
-
+	void stopMode();
 	int directionLeft;
 	int velocityLeft;
 	int directionRight;
@@ -38,9 +40,9 @@ public:
 	int directionRightLast;
 	int velocityRightLast;
 	bool warningMode;
-
+	bool gedrosselt;
 private:
-
+	int antriebsverhaeltnis;
 	IOControl *ioControl;
 	LogFiles *logfiles;
 	static int BAUDRATE;

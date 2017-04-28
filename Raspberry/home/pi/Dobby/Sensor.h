@@ -24,6 +24,8 @@ public:
 	static int sens_init;
 	void closeSensor();
 	static int sockfd;
+	int warning_ausloeser;
+	int warning_ausloeser_alt;
 	static int ausloeser;
 	int ausloeser_entfernung;
 
