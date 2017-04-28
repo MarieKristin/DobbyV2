@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <Frame.h>
+#include "LogFiles.h"
 enum FrameType
 {
 	init, activation, message	//0, 1, 2
@@ -10,6 +11,8 @@ class IOControl;
 class Frame;
 class LogFiles;
 class Lin
+
+
 {
 public:
 	Lin();

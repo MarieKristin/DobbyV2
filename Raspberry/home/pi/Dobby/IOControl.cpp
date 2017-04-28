@@ -6,7 +6,6 @@
 #include <pigpio.h>
 #include <iostream>
 #include "IOControl.h"
-
 using namespace std;
 
 IOControl::IOControl(LogFiles *p_logfiles){
@@ -87,4 +86,14 @@ unsigned int IOControl::blinken(int lampe, int geschwindigkeit) {
 		i++;
 	}
 	return 1;
+}
+
+void IOControl::alleGPIOSAusschalten(){
+	writePin(25, 0);
+	writePin(8, 0);
+	writePin(7, 0);
+	writePin(12, 0);
+	writePin(16, 0);
+	writePin(20, 0);
+	writePin(21, 0);
 }

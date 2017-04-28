@@ -6,7 +6,9 @@
 #include <pigpio.h>
 #include "Frame.h"
 #include "Lin.h"
+#include "LogFiles.h"
 #include "IOControl.h"
+#include <syslog.h>
 #define _GLIBCXX_USE_C99 1
 #include <string>
 #include <iostream>
@@ -50,7 +52,7 @@ void Lin::getFrame() {
 
 
 void Lin::circleRegulation(){
-	cout << "CIrcleCirculation" << endl;
+/*	cout << "CIrcleCirculation" << endl;
 	if(velocityLeft != 00 ||  velocityRight != 00){
 	if (((directionLeftLast != directionRightLast) && (directionLeft == directionRight)) ||
 				((directionLeftLast == directionRightLast) && (directionLeft != directionRight))){
@@ -76,11 +78,12 @@ void Lin::circleRegulation(){
 				}
 			}
 
-	}
+	}*/
 }
 
 
 int Lin::interpretControlString(std::string inputString, int status){
+		logfiles->print_log(LOG_INFO, "InterpretControlString - Start");
 		int help;
 		std::stringstream puffer;
 
@@ -91,8 +94,6 @@ int Lin::interpretControlString(std::string inputString, int status){
                 puffer.clear();
 		puffer  << (inputString.substr(0,2));
 		puffer >> std::hex >> help;
-//		cout << "InterpretString Help: " << help << "\n";
-//		cout << "InterpretString LastLeft: " << directionLeftLast << "\n";
 		if( status == 0 || (status != 0 && (help != directionLeftLast))){
 				 directionLeft = help;
 					}
@@ -100,9 +101,10 @@ int Lin::interpretControlString(std::string inputString, int status){
 				if(status != 0 && velocityLeft == 0){
 					messageFrame.setContent(0x3C, 0x84, directionLeftLast, 0x00, 0x55, 0xA5, directionRightLast, 0x00, 0xFF);
         				sendMessageFrame();
+						logfiles->print_log(LOG_ERR, "Control-Werte nicht erlaubt: Beachte Mode");
 					return 2;
 					}
-				else{
+				else{logfiles->print_log(LOG_ERR, "Control-Werte nicht erlaubt: Beachte Mode");
 					return 2;
 					}}
 		puffer.str("");
@@ -111,13 +113,11 @@ int Lin::interpretControlString(std::string inputString, int status){
 
 		puffer  << (inputString.substr(6,2));
 		puffer >> std::hex >> help;
-//		cout << "InterpretString Help: " << help << "\n";
-//              cout << "InterpretString LastRight: " << directionRightLast << "\n";
 		if( status == 0 || (status != 0 && (help != directionRightLast))){
 				directionRight = help;
 
 					}
-		else{
+		else{		logfiles->print_log(LOG_ERR, "Control-Werte nicht erlaubt: Beachte Mode");
 					return 2;
 					}
 		puffer.str("");
@@ -125,6 +125,7 @@ int Lin::interpretControlString(std::string inputString, int status){
 
 		puffer  << (inputString.substr(9,2));
 		puffer  >> std::hex >> velocityRight;
+		logfiles->print_log(LOG_ERR, "InterpretControlString - Vel1.:%d Dir1.:%d Vel2.:%d Dir2.: %d", velocityLeft, directionLeft, velocityRight, directionRight);
 		return 1;
 }
 
@@ -132,14 +133,13 @@ int Lin::interpretControlString(std::string inputString, int status){
 
 
 void Lin::startMotorsInit(){
+	logfiles->print_log(LOG_ERR, "MotorInit Start");
 	setInitialContents();
 	if (ioControl->getHandle() < 0) {
 		ioControl->openSerial();
 	}
 	velocityLeft = 0;
 	velocityRight = 0;
-	//directionLeft = 170;
-	//directionRight = 85;
 	messageFrame.setContent(0x3C, 0x84, 0xAA, 0x00, 0x55, 0xA5, 0x55, 0x00, 0xFF);
 	sendWakeUp();
 	ioControl->setSleep(310000);  //Warte 310ms
@@ -155,11 +155,15 @@ void Lin::startMotorsInit(){
 	velocityRightLast = 0;
 	directionLeftLast = 0xAA;
 	directionRightLast = 0x55;
+	
+	logfiles->print_log(LOG_ERR, "MotorInit Ende");
 }
 
 void Lin::startMotorsRoutine(){
+	logfiles->print_log(LOG_ERR, "Werte an Motor senden Start");
 	messageFrame.setContent(0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5, directionRight, velocityRight, 0xFF);
 	sendMessageFrame();
+	logfiles->print_log(LOG_ERR, "Werte an Motor senden ENDE");
 }
 
 
@@ -236,8 +240,8 @@ void Lin::stopMode(){
 
 
 void Lin::WarningMode() {
-
-	cout << "SensorWarningLevel" << endl;
+	logfiles->print_log(LOG_ERR, "WarningMode Start");
+	/*cout << "SensorWarningLevel" << endl;
 	cout << warningMode << "\n";
 	cout << "VelocityLeft: " << velocityLeft << endl;
 	cout << "VelocityLeftLast: " << velocityLeftLast << endl;
@@ -245,9 +249,10 @@ void Lin::WarningMode() {
 	cout << "VelocityRight: " << velocityRight << endl;
 	cout << "VelocityRightLast: " << velocityRightLast << endl;
 	cout << "DirectionRight: " << directionRight << endl;
-
+*/
 
 if((velocityLeftLast <= 27 || velocityRightLast <= 27) && gedrosselt == true){
+	
 	if(velocityLeft > 0 && velocityRight > 0){
 			cout << "drossel";
 			if(antriebsverhaeltnis != (velocityLeft/velocityRight)){
@@ -277,10 +282,12 @@ if((velocityLeftLast <= 27 || velocityRightLast <= 27) && gedrosselt == true){
 	}
 else{	neuerSchritt:
 	if(velocityLeft > 27 || velocityRight > 27){
-			cout << "ROutine 1\n";
+			logfiles->print_log(LOG_ERR, "Drosselungsprozess Start - Routine 1");	
+			cout << "Routine 1\n";
 
 			if(velocityLeft > velocityRight){
 				antriebsverhaeltnis = velocityLeft / velocityRight;
+				logfiles->print_log(LOG_ERR, "Drosselungsprozess - Option1");
 				cout << "Option 1\n";
 				while(velocityLeft > 27){
 						velocityLeft = velocityLeft - 9;
@@ -294,6 +301,7 @@ else{	neuerSchritt:
 			else{
 				if(velocityLeft < velocityRight){
 						cout << "Option 2\n";
+						logfiles->print_log(LOG_ERR, "Drosselungsprozess - Option2");
 						antriebsverhaeltnis = velocityRight / velocityLeft;
 		                		while(velocityRight > 27){
                 	                		velocityRight = velocityRight - 9;
@@ -308,6 +316,7 @@ else{	neuerSchritt:
 					antriebsverhaeltnis = 1;
 					while(velocityLeft > 27){
 						cout << "Option 3\n";
+						logfiles->print_log(LOG_ERR, "Drosselungsprozess - Option3");
 						velocityLeft = velocityLeft - 9;
 						velocityRight = velocityRight - 9;
 						messageFrame.setContent(0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5,
@@ -321,6 +330,7 @@ else{	neuerSchritt:
 			}
 	else{
 			cout << "Routine 2\n";
+			logfiles->print_log(LOG_ERR, "Drosselungsprozess Start - Routine 2");	
 			 messageFrame.setContent(0x3C, 0x84, directionLeft, velocityLeft, 0x55, 0xA5,
                                       		               directionRight, velocityRight, 0xFF);
                              		 sendMessageFrame();
@@ -330,12 +340,14 @@ else{	neuerSchritt:
 	
 
 }
-
+/*
         cout << "VelocityLeft: " << velocityLeft << endl;
         cout << "VelocityLeftLast: " << velocityLeftLast << endl;
         cout << "DirectionLeft: " << directionLeft << endl;
         cout << "VelocityRight: " << velocityRight << endl;
         cout << "VelocityRightLast: " << velocityRightLast << endl;
-        cout << "DirectionRight: " << directionRight << endl;
+        cout << "DirectionRight: " << directionRight << endl;*/
+		
+		logfiles->print_log(LOG_ERR, "WarningMode Ende");
 
 }
