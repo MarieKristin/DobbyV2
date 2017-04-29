@@ -1242,7 +1242,7 @@ table.settings-table td:last-child {
 }
 .adsk-toolbar {
     position: absolute;
-    left: 50%;
+    
     bottom: 10px;
     text-align: center;
     z-index: 5;
@@ -1786,8 +1786,8 @@ highlight {
     display: block;
     position: absolute;
     outline: none;
-    width: 150px ;
-    height: 150px;
+    width: 100px ;
+    height: 100px;
     right:0px;
     top:0px;
     opacity: 0.7;

@@ -52,10 +52,10 @@
         .clear { clear: both; }
 
         div#project { margin: 0 auto; width: 100%; text-align: left; }
-        div#viewer { width: calc(100% - 190px); height: 700px; cursor: pointer; padding: 0px; margin-bottom: 20px; position: relative; overflow: hidden;
+        div#viewer { width: 100%; height: 300px; cursor: pointer; padding: 0px; margin-bottom: 20px; position: relative; overflow: hidden;
             background-color: #eee; border: 2px dashed #aaa; border-radius: 10px; }
         div#footer { margin: 0 auto; width: 100%; text-align: left; }
-        div#list { width: 175px; height: 700px; padding: 0px; position:relative;
+        div#list { width: 175px; height: 300px; padding: 0px; position:relative;
             background-color: #eee; border: 2px dashed #aaa; border-radius: 10px;
 	        overflow: auto; }
 
@@ -101,7 +101,7 @@
 
     <script>
         var docs =
-            [{"path":"./132edd68-24c1-920e-0c0d-ba994449f35a_f2d/primaryGraphics.f2d","name":"2D View"},{"path":"./dwg.svf","name":"3D View"}]
+            [{"path":"./dwg.svf","name":"3D View"}]
         ;
 
         var oViewer =null ;
@@ -119,24 +119,7 @@
                     setTimeout (function () { oViewer.autocam.setHomeViewFrom (oViewer.navigation.getCamera ()) ; }, 1000) ;
                 }) ;
 				oViewer.loadModel (options.docid) ;
-
-				for ( var i =0 ; i < docs.length ; i++ ) {
-					var r =$('<div><button id="view_' + i + '">'
-						+ docs [i].name
-						+ '<div><img id="img__' + i + '" src="' + docs [i].path + '.png"></div></button></div>') ;
-					$('#list').append (r) ;
-					$('#view_' + i).click (function (e) {
-						e.stopPropagation () ;
-                        //oViewer.impl.unloadCurrentModel () ;
-                        // API would be tearDown()/setUp()
-                        // tearDown() unloads extensions too, so you need setUp() after that to load again
-                        // setUp() requires the viewer configuration again, the one you use to start the viewer.
-                        oViewer.tearDown () ;
-                        oViewer.setUp ({ env: 'Local' }) ;
-						var i =parseInt (e.target.id.substring (5)) ;
-						oViewer.loadModel (docs [i].path) ;
-					}) ;
-				}
+				
 			}) ;
         }) ;
     </script>
@@ -145,12 +128,12 @@
 <body>
     <div id="project">
         <hr />
-        <h3>LMV Extractor Node.js Sample (local view)</h3>
-        <h5>This model was extracted using <a href="http://extract.autodesk.io">http://extract.autodesk.io</a></h5>
+        
+ 
         <br />
         <div>
             <div id="viewer" class="left"></div>
-            <div id="list" class="right"></div>
+          
         </div>
         <br />
     </div>
