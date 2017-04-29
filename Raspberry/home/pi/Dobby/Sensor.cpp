@@ -268,8 +268,8 @@ int Sensor::startRoutine() {
 //	cout << "Aktuelle Entfernung: " << aktuelle_entfernung << "\n" ;
 //	cout << "Aktueller Ausloeser: " << aktueller_ausloeser << "\n";
 	lin->warningMode = false;
-	if(aktuelle_entfernung < 500){
-		if(aktuelle_entfernung < 230){
+	if(aktuelle_entfernung < 600){
+		if(aktuelle_entfernung < 350){
 				if(ausloeser == 0){
 					ausloeser = aktueller_ausloeser;
 					ausloeser_entfernung = aktuelle_entfernung;
